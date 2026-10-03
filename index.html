@@ -1,0 +1,940 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Tutor de Trading</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+:root{--bg:var(--tg-theme-bg-color,#fff);--tx:var(--tg-theme-text-color,#111);--mut:var(--tg-theme-hint-color,#7a7a7a);--bt:var(--tg-theme-button-color,#2481cc);--bx:var(--tg-theme-button-text-color,#fff);--card:var(--tg-theme-secondary-bg-color,#f0f2f5);--up:#16a34a;--dn:#dc2626;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.4 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+nav{display:flex;gap:6px;padding:10px;position:sticky;top:0;background:var(--bg);z-index:2}
+nav button,.seg button{flex:1;border:0;border-radius:10px;padding:9px 4px;background:var(--card);color:var(--tx);font:inherit;font-size:13px}
+nav button.on,.seg button.on{background:var(--bt);color:var(--bx)}
+main{padding:0 12px 24px;max-width:640px;margin:auto}
+.panel{display:none}.panel.on{display:block}
+.seg{display:flex;gap:6px;margin:8px 0}
+.card{background:var(--card);border-radius:12px;padding:12px;margin:10px 0}
+.precio{font-size:26px;font-weight:700}
+.up{color:var(--up)}.dn{color:var(--dn)}.mut{color:var(--mut);font-size:12px}
+canvas{width:100%;height:260px;display:block}
+label{display:block;margin:8px 0 2px;font-size:13px;color:var(--mut)}
+[hidden]{display:none!important}
+nav{overflow-x:auto}nav button{flex:1 0 auto;white-space:nowrap;padding:9px 12px}
+.row{display:flex;justify-content:space-between;gap:8px;padding:6px 0;border-bottom:1px solid var(--bg)}
+.mini{border:0;border-radius:8px;padding:4px 10px;background:var(--bt);color:var(--bx);font:inherit;font-size:12px}
+input:not([type=checkbox]){width:100%;padding:10px;border-radius:10px;border:1px solid var(--mut);background:var(--bg);color:var(--tx);font:inherit}
+.btn{width:100%;margin-top:10px;border:0;border-radius:10px;padding:11px;background:var(--bt);color:var(--bx);font:inherit}
+.res div{display:flex;justify-content:space-between;padding:4px 0}
+.chk{display:flex;gap:10px;align-items:flex-start;padding:9px 0}
+.chk input{width:20px;height:20px;margin-top:2px}
+dt{font-weight:600;margin-top:10px}dd{margin:2px 0 0;color:var(--mut)}
+.ov{position:fixed;inset:0;background:#000b;z-index:9;display:flex;align-items:center;justify-content:center;padding:16px}.ov .card{width:100%;max-width:420px}
+details summary{cursor:pointer;font-weight:600}details p{color:var(--mut)}.g2{display:flex;gap:8px}
+select{width:100%;padding:10px;border-radius:10px;border:1px solid var(--mut);background:var(--bg);color:var(--tx);font:inherit}.g2>div{flex:1}.g2 .btn{margin-top:10px}
+.lec{display:flex;align-items:center;gap:10px;padding:11px 0;border-bottom:1px solid var(--bg)}.lec b{flex:1;font-weight:600}
+.num{width:26px;height:26px;border-radius:50%;background:var(--bt);color:var(--bx);display:grid;place-items:center;font-size:12px;flex:none}.num.okk{background:var(--up)}
+.bar{height:6px;border-radius:3px;background:var(--bg);overflow:hidden;margin-top:8px}.bar i{display:block;height:100%;background:var(--up)}
+.ejem{border-left:3px solid var(--bt);padding:6px 10px;margin:10px 0}.rec{background:var(--bg);border-radius:8px;padding:8px 10px;margin:10px 0}
+svg.fig{width:100%;height:auto;display:block;margin:6px 0 10px}.fig .t{fill:var(--tx);font:11px system-ui}.fig .m{fill:var(--mut);font:10px system-ui}
+.btn:disabled{opacity:.4}
+</style>
+</head>
+<body>
+<nav id="tabs">
+  <button data-p="graf" class="on">📈 Gráfico</button>
+  <button data-p="sim">💼 Simulador</button>
+  <button data-p="calc">📐 Tamaño</button>
+  <button data-p="chk">✅ Checklist</button>
+  <button data-p="pra">🎯 Práctica</button><button data-p="les">📘 Lecciones</button><button data-p="qz">❓ Quiz</button><button data-p="rl">🧪 Riesgo</button><button data-p="ds">🛡️ Disciplina</button><button data-p="cs">🧠 Casos</button><button data-p="glo">📖 Glosario</button>
+</nav>
+<main>
+
+<section id="graf" class="panel on">
+  <div class="seg" id="activos"><button data-a="BTC" class="on">BTC</button><button data-a="ETH">ETH</button><button data-a="SOL">SOL</button><button data-a="XRP">XRP</button><button data-a="XAU">Oro</button></div>
+  <div class="seg" id="rangos"><button data-d="1">1d</button><button data-d="7">7d</button><button data-d="30" class="on">30d</button><button data-d="90">90d</button></div>
+  <div class="seg" id="inds"><button data-i="sma">Media móvil 20</button><button data-i="rsi">RSI 14</button><button data-i="bb">Bollinger</button><button data-i="macd">MACD</button></div>
+  <div class="card">
+    <div class="precio" id="px">…</div>
+    <div id="chg" class="mut"></div>
+    <canvas id="cv"></canvas><canvas id="cvr" style="height:80px" hidden></canvas><canvas id="cvm" style="height:90px" hidden></canvas><div class="mut">▲ compras y ▼ ventas se marcan solas. Toca el gráfico para trazar una línea (púrpura); toca cerca de ella para borrarla.</div>
+    <div id="estado" class="mut"></div><label class="chk"><input type="checkbox" id="ahorro"><span style="color:var(--tx)">📶 Modo ahorro de datos</span></label><div id="uso" class="mut"></div>
+  </div>
+  <div class="mut">El oro se calcula con PAXG (oro tokenizado): es una referencia aproximada. Confirma el precio antes de registrar tu operación.</div>
+</section>
+
+<section id="sim" class="panel">
+  <div class="card" id="s_res"></div>
+  <div class="seg" id="sub"><button data-s="op" class="on">Operar</button><button data-s="dia">Diario</button><button data-s="pat">Patrones</button><button data-s="est">Stats</button></div>
+  <div id="s_op">
+    <div class="card">
+      <label>Activo</label><input id="s_sym" list="activos_l" value="BTC"><datalist id="activos_l"><option value="BTC"><option value="ETH"><option value="SOL"><option value="XRP"><option value="XAU"></datalist>
+      <label>Cantidad</label><input id="s_cant" type="number" inputmode="decimal">
+      <label>Precio</label><input id="s_px" type="number" inputmode="decimal">
+      <button class="btn" id="s_usar" style="background:var(--bg);color:var(--tx);border:1px solid var(--mut)">Usar precio actual</button>
+      <label>Stop loss (obligatorio)</label><input id="s_stp" type="number" inputmode="decimal"><label>Objetivo / take profit (obligatorio)</label><input id="s_obj" type="number" inputmode="decimal"><div id="s_rr" class="mut" style="margin-top:6px"></div>
+      <label>Razón (con etiquetas: #ruptura #soporte #rsi)</label><input id="s_raz" type="text"><label>¿Cómo te sientes al entrar?</label><select id="s_em"><option>😌 Calmado</option><option>😰 Miedo</option><option>🤩 Euforia</option><option>😡 Rabia</option></select>
+      <div style="display:flex;gap:8px"><button class="btn" id="s_buy" style="background:var(--up)">Comprar</button><button class="btn" id="s_sell" style="background:var(--dn)">Vender</button></div>
+      <div id="s_msg" class="mut" style="margin-top:8px"></div>
+    </div>
+    <div class="card" id="s_pos"></div>
+    <button class="btn" id="s_reset" style="background:var(--card);color:var(--dn)">Reiniciar simulador</button>
+  </div>
+  <div id="s_dia" hidden></div>
+  <div id="s_pat" hidden></div>
+  <div id="s_est" hidden></div>
+</section>
+
+<section id="calc" class="panel">
+  <div class="card">
+    <label>Capital ($)</label><input id="cap" type="number" inputmode="decimal" value="10000">
+    <label>Riesgo por operación (%)</label><input id="rie" type="number" inputmode="decimal" value="1">
+    <label>Precio de entrada</label><input id="ent" type="number" inputmode="decimal">
+    <label>Stop loss (debajo de la entrada)</label><input id="stp" type="number" inputmode="decimal">
+    <button class="btn" id="usar">Usar el precio actual como entrada</button>
+  </div>
+  <div class="card res" id="res"><span class="mut">Escribe entrada y stop para calcular.</span></div>
+</section>
+
+<section id="chk" class="panel">
+  <div class="card" id="lista"></div>
+  <div class="card" id="veredicto"></div>
+  <button class="btn" id="reset">Reiniciar checklist</button>
+</section>
+
+<section id="glo" class="panel">
+  <input id="buscar" type="search" placeholder="Buscar término…">
+  <dl id="terminos"></dl><button class="btn" id="vtut">👋 Ver tutorial</button>
+</section>
+
+<section id="pra" class="panel">
+  <div class="card"><b id="p_t">Cargando…</b><canvas id="cvp" style="height:300px;touch-action:pan-y"></canvas><div style="display:flex;gap:6px;margin:6px 0;align-items:center"><button class="mini" id="z_o">➖ Alejar</button><button class="mini" id="z_i">➕ Acercar</button><button class="mini" id="z_p" hidden>⏩ Presente</button><span class="mut" id="z_n" style="margin-left:auto"></span></div><div id="p_i" class="mut"></div></div>
+  <div class="card">
+    <div class="g2"><div><label>Activo</label><select id="p_a"><option>BTC</option><option>ETH</option><option>SOL</option><option>XRP</option><option>XAU</option></select></div><div><label>Velas de</label><select id="p_d"><option value="30">4 horas</option><option value="365">4 días</option></select></div></div>
+    <label class="chk"><input type="checkbox" id="p_h"><span style="color:var(--tx)">Sin indicadores (modo experto)</span></label>
+    <div class="g2"><div><label>Stop %</label><input id="p_sl" type="number" inputmode="decimal" value="2"></div><div><label>Objetivo %</label><input id="p_tp" type="number" inputmode="decimal" value="4"></div><div><label>Riesgo %</label><input id="p_rk" type="number" inputmode="decimal" value="1"></div></div>
+    <div class="g2"><div><label>Costo % (spread+comisión)</label><input id="p_co" type="number" inputmode="decimal" value="0.1"></div><div><label>Cómo te sientes</label><select id="p_em"><option>😌 Calmado</option><option>😰 Miedo</option><option>🤩 Euforia</option><option>😡 Rabia</option></select></div></div><label class="chk"><input type="checkbox" id="p_dia"><span style="color:var(--tx)">📆 Tramo del día (el mismo tramo hoy, para repetirlo y comparar)</span></label><label>Razón de entrada</label><select id="p_tg"><option>#ruptura</option><option>#soporte</option><option>#rsi</option><option>#tendencia</option><option>#otra</option></select>
+    <div class="g2"><button class="btn" id="p_b" style="background:var(--up)">▲ Comprar</button><button class="btn" id="p_k" style="background:var(--dn)">▼ Corto</button></div>
+    <div class="g2"><button class="btn" id="p_s" style="background:var(--card);color:var(--tx)">🔒 Stop a entrada</button><button class="btn" id="p_m" style="background:var(--card);color:var(--tx)">½ Cerrar mitad</button></div>
+    <label class="chk"><input type="checkbox" id="p_tr"><span style="color:var(--tx)">📈 Trailing stop: el stop sube con el precio, a la distancia de tu stop inicial</span></label>
+    <label class="chk"><input type="checkbox" id="p_pp"><span style="color:var(--tx)">½ Cerrar la mitad automáticamente en el primer objetivo (1:1)</span></label>
+    <div class="g2"><button class="btn" data-w="1">▶ 1</button><button class="btn" data-w="5">▶ 5</button><button class="btn" data-w="10">▶ 10</button><button class="btn" id="p_c" style="background:var(--dn)">Cerrar</button></div>
+    <div class="g2"><button class="btn" id="p_n" style="background:var(--card);color:var(--tx)">🔀 Nuevo tramo</button><button class="btn" id="p_e" style="background:var(--card);color:var(--tx)">🏁 Terminar</button></div>
+  </div>
+  <div class="card" id="p_f" hidden></div><div class="card" id="p_sm" hidden></div>
+  <div class="card" id="p_r"></div><div class="card" id="p_ch"></div>
+</section>
+<section id="les" class="panel"></section>
+<section id="qz" class="panel"></section>
+<section id="rl" class="panel">
+  <div class="seg" id="rl_sub"><button data-s="r" class="on">🎲 Rachas</button><button data-s="c">⚖️ Comparar</button><button data-s="x">📉 Recuperar</button></div>
+  <div class="card" id="rl_in">
+    <div class="g2"><div><label>Aciertos (%)</label><input id="rl_w" type="number" inputmode="decimal" value="40"></div><div><label>Beneficio / riesgo</label><input id="rl_rr" type="number" inputmode="decimal" value="2"></div></div>
+    <div class="g2"><div><label>Riesgo por operación (%)</label><input id="rl_rk" type="number" inputmode="decimal" value="1"></div><div><label>Nº de operaciones</label><input id="rl_n" type="number" inputmode="decimal" value="100"></div></div>
+    <button class="btn" id="rl_go">🎲 Simular</button>
+  </div>
+  <div id="rl_out"></div>
+</section>
+<section id="ds" class="panel"></section>
+<section id="cs" class="panel"></section>
+
+</main>
+<div id="tut" class="ov" hidden></div>
+<script>
+const $=id=>document.getElementById(id);
+const tg=window.Telegram&&window.Telegram.WebApp;
+if(tg){try{tg.ready();tg.expand();}catch(e){}}
+const store={
+  get(k){try{return JSON.parse(localStorage.getItem(k))}catch(e){return null}},
+  set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
+};
+const f=(n,d)=>Number(n).toLocaleString('en-US',{maximumFractionDigits:d??(Math.abs(n)<10?4:2)});
+
+// ---------- Pestañas ----------
+$('tabs').onclick=e=>{
+  const p=e.target.dataset.p; if(!p)return;
+  document.querySelectorAll('nav button,.panel').forEach(x=>x.classList.remove('on'));
+  e.target.classList.add('on'); $(p).classList.add('on');
+  if(p==='graf')dibujar();
+  if(p==='sim')pintarSim();
+  if(p==='les')pintarLes();if(p==='qz')pintarQz();if(p==='rl')pintarRl();if(p==='ds')pintarDs();if(p==='cs')pintarCs();
+  if(p==='pra'){P?pDib():pNueva();}
+};
+
+// ---------- Gráfico de velas ----------
+const IDS={BTC:'bitcoin',ETH:'ethereum',SOL:'solana',XRP:'ripple',XAU:'pax-gold'};
+let activo='BTC',dias=30,datos=[];
+function seg(id,attr,fn){
+  $(id).onclick=e=>{const v=e.target.dataset[attr];if(!v)return;
+    $(id).querySelectorAll('button').forEach(b=>b.classList.remove('on'));
+    e.target.classList.add('on');fn(v);cargar();};
+}
+seg('activos','a',v=>activo=v);
+seg('rangos','d',v=>dias=+v);
+
+async function cargar(){
+  const k=`ohlc_${activo}_${dias}`,c=store.get(k);
+  let hora,viejo=false;
+  if(c&&(ahorro||Date.now()-c.t<600000)){datos=c.d;hora=c.t;}      // caché 10 min: ahorra datos
+  else{
+    $('estado').textContent='Cargando…';
+    try{
+      const r=await fetch(`https://api.coingecko.com/api/v3/coins/${IDS[activo]}/ohlc?vs_currency=usd&days=${dias}`);
+      if(!r.ok)throw new Error(r.status);
+      const tx=await r.text();uso(tx.length);datos=JSON.parse(tx);hora=Date.now();store.set(k,{t:hora,d:datos});
+    }catch(e){
+      if(c){datos=c.d;hora=c.t;viejo=true;}
+      else{datos=[];$('px').textContent='Sin datos';$('chg').textContent='';
+        $('estado').textContent='No se pudo conectar. Inténtalo más tarde.';dibujar();return;}
+    }
+  }
+  const h=new Date(hora).toLocaleTimeString('es',{hour:'2-digit',minute:'2-digit'});
+  $('estado').textContent=viejo?`Sin conexión: datos guardados de las ${h}`:`Actualizado ${h}`;
+  const ult=datos[datos.length-1][4],ini=datos[0][1],ch=(ult-ini)/ini*100;
+  $('px').textContent='$'+f(ult);
+  $('chg').innerHTML=`<span class="${ch>=0?'up':'dn'}">${ch>=0?'▲':'▼'} ${f(Math.abs(ch),2)}%</span> en ${dias===1?'24 horas':dias+' días'}`;
+  dibujar();
+}
+
+function dibujar(cv=$('cv'),arr=datos,ex={}){
+  const W=cv.clientWidth,H=cv.clientHeight;if(!W)return;
+  const main=cv.id==='cv';if(main){ex={sma:ind.sma,bb:ind.bb,lines:[],mark:[],time:true,i0:0};
+    const q=sim.pos[activo];if(q&&q.stop)ex.lines.push({v:q.prom,c:'#888'},{v:q.stop,c:'#dc2626'},{v:q.obj,c:'#16a34a'});
+    (store.get('lin_'+activo)||[]).forEach(v=>ex.lines.push({v,c:'#a855f7'}));
+    if(q&&q.stop){const en=[...sim.diario].reverse().find(e=>e.sym===activo&&e.tipo==='COMPRA'&&e.t);if(en){let kk=-1;arr.forEach((c,i)=>{if(c[0]<=en.t)kk=i});if(kk>=0)ex.box={i:kk,e:q.prom,sl:q.stop,tp:q.obj}}}
+    sim.diario.forEach(e=>{if(e.sym!==activo||!e.t)return;let k=-1;arr.forEach((c,i)=>{if(c[0]<=e.t)k=i});if(k<0)return;
+      ex.mark.push({i:k,p:e.precio,l:e.tipo==='VENTA'&&e.pnl!==undefined?sg(e.pnl):'',t:e.tipo==='COMPRA'?'▲':'▼',c:e.tipo==='COMPRA'?'#2481cc':e.pnl>=0?'#16a34a':'#dc2626'})});}
+  const dpr=window.devicePixelRatio||1;cv.width=W*dpr;cv.height=H*dpr;
+  const x=cv.getContext('2d');x.scale(dpr,dpr);x.clearRect(0,0,W,H);
+  if(!arr.length)return;
+  const mut=getComputedStyle(document.documentElement).getPropertyValue('--mut').trim()||'#888';
+  const pad={l:4,r:58,t:8,b:ex.time?26:8},L=ex.lines||[],S=ex.sma?SMA(arr,20):[],B=ex.bb?BB(arr):[];
+  let hi=Math.max(...arr.map(c=>c[2]),...L.map(l=>l.v),...B.filter(Boolean).map(b=>b[1])),lo=Math.min(...arr.map(c=>c[3]),...L.map(l=>l.v),...B.filter(Boolean).map(b=>b[0]));
+  const m=(hi-lo)*.06||1;hi+=m;lo-=m;
+  const Y=v=>pad.t+(hi-v)/(hi-lo)*(H-pad.t-pad.b);cv._m=[hi,lo,pad.t,H-pad.b];
+  x.font='11px system-ui';x.fillStyle=mut;x.strokeStyle=mut;x.globalAlpha=.25;
+  for(let i=0;i<=4;i++){const v=lo+(hi-lo)*i/4,y=Y(v);
+    x.beginPath();x.moveTo(pad.l,y);x.lineTo(W-pad.r,y);x.stroke();
+    x.globalAlpha=1;x.fillText(f(v,v<10?3:0),W-pad.r+4,y+4);x.globalAlpha=.25;}
+  x.globalAlpha=1;
+  const cw=(W-pad.l-pad.r)/arr.length;
+  if(ex.time&&arr.length>1){
+    const st=arr[1][0]-arr[0][0],intra=st<8.2e7,two=n=>String(n).padStart(2,'0'),ev=Math.max(1,Math.ceil((intra?62:60)/cw)),yb=H-pad.b;
+    x.font='10px system-ui';x.textAlign='center';x.fillStyle=mut;x.strokeStyle=mut;let prev=null;
+    arr.forEach((c,i)=>{const d=new Date(c[0]),dm=two(d.getDate())+'/'+two(d.getMonth()+1),new_=prev!==dm;
+      if((ex.i0+i)%ev!==0)return;
+      const px=pad.l+i*cw+cw/2;if(px<pad.l+22||px>W-pad.r-22)return;
+      x.globalAlpha=.3;x.beginPath();x.moveTo(px,pad.t);x.lineTo(px,yb);x.stroke();x.globalAlpha=1;
+      if(intra){x.fillText(two(d.getHours())+':'+two(d.getMinutes()),px,yb+11);if(new_||prev===null)x.fillText(dm,px,yb+22);}
+      else x.fillText(dm+'/'+String(d.getFullYear()).slice(2),px,yb+12);
+      prev=dm;});
+    x.textAlign='left';x.font='11px system-ui';}
+  if(ex.box){const b=ex.box,x0=Math.max(pad.l,pad.l+Math.max(0,b.i)*cw+cw/2),x1=W-pad.r,lg=b.tp>b.e;
+    x.globalAlpha=.14;x.fillStyle='#16a34a';x.fillRect(x0,Math.min(Y(b.e),Y(b.tp)),x1-x0,Math.abs(Y(b.tp)-Y(b.e)));
+    x.fillStyle='#dc2626';x.fillRect(x0,Math.min(Y(b.e),Y(b.sl)),x1-x0,Math.abs(Y(b.sl)-Y(b.e)));x.globalAlpha=1;
+    x.font='10px system-ui';x.fillStyle='#16a34a';x.fillText(`TP ${f(Math.abs(b.tp/b.e-1)*100,2)}%`,x0+4,Y(b.tp)+(lg?12:-4));
+    x.fillStyle='#dc2626';x.fillText(`SL ${f(Math.abs(b.sl/b.e-1)*100,2)}%`,x0+4,Y(b.sl)+(lg?-4:12));
+    x.fillStyle=mut;x.fillText(`R:R 1:${f(Math.abs(b.tp-b.e)/Math.abs(b.e-b.sl),1)}`,x0+4,Y(b.e)+(lg?-4:12));x.font='11px system-ui'}
+  arr.forEach((c,i)=>{
+    const [,o,h,l,cl]=c,px=pad.l+i*cw+cw/2,col=cl>=o?'#16a34a':'#dc2626';
+    x.strokeStyle=x.fillStyle=col;
+    x.beginPath();x.moveTo(px,Y(h));x.lineTo(px,Y(l));x.stroke();
+    const top=Y(Math.max(o,cl)),bh=Math.max(1,Math.abs(Y(o)-Y(cl)));
+    x.fillRect(px-cw*.35,top,cw*.7,bh);
+  });
+  if(ex.sma){x.strokeStyle='#f59e0b';x.lineWidth=2;x.beginPath();let k=0;S.forEach((v,i)=>{if(v==null)return;const px=pad.l+i*cw+cw/2;k++?x.lineTo(px,Y(v)):x.moveTo(px,Y(v))});x.stroke();x.lineWidth=1}
+  if(ex.bb){x.strokeStyle='#06b6d4';x.lineWidth=1.5;[0,1].forEach(j=>{x.beginPath();let k=0;B.forEach((v,i)=>{if(!v)return;const px=pad.l+i*cw+cw/2;k++?x.lineTo(px,Y(v[j])):x.moveTo(px,Y(v[j]))});x.stroke()});x.lineWidth=1}
+  const tag=(v,c,t)=>{const y=Y(v);x.fillStyle=c;x.beginPath();x.rect(W-pad.r+1,y-8,pad.r-2,16);x.fill();x.fillStyle='#fff';x.font='bold 10px system-ui';x.fillText(t,W-pad.r+4,y+3.5);x.font='11px system-ui'};
+  L.forEach(l=>{x.strokeStyle=l.c;x.setLineDash([5,4]);x.beginPath();x.moveTo(pad.l,Y(l.v));x.lineTo(W-pad.r,Y(l.v));x.stroke();x.setLineDash([]);tag(l.v,l.c,f(l.v,l.v<10?3:0))});
+  const lc=arr[arr.length-1][4],lu=lc>=arr[arr.length-1][1],lcol=lu?'#16a34a':'#dc2626';
+  x.strokeStyle=lcol;x.globalAlpha=.7;if(!ex.past){x.setLineDash([2,3]);x.beginPath();x.moveTo(pad.l,Y(lc));x.lineTo(W-pad.r,Y(lc));x.stroke();x.setLineDash([]);x.globalAlpha=1;tag(lc,lcol,f(lc,lc<10?3:0));}x.globalAlpha=1;
+  (ex.mark||[]).forEach(k=>{if(k.i<0||k.i>=arr.length)return;const px=pad.l+k.i*cw+cw/2,py=Y(k.p),up=k.t==='▲';x.fillStyle=k.c;
+    if(k.t==='●'||k.t==='½'){x.beginPath();x.arc(px,py,k.t==='½'?4:5,0,7);x.fill();x.strokeStyle='#fff';x.lineWidth=1.5;x.stroke();x.lineWidth=1}
+    else{const y0=up?Y(arr[k.i][3])+13:Y(arr[k.i][2])-13;x.beginPath();x.moveTo(px,y0+(up?-8:8));x.lineTo(px-6,y0+(up?2:-2));x.lineTo(px+6,y0+(up?2:-2));x.closePath();x.fill()}
+    if(k.l){x.font='bold 10px system-ui';x.fillStyle=k.c;x.fillText(k.l,Math.min(px+8,W-pad.r-44),(k.t==='●'||k.t==='½')?py-8:(up?Y(arr[k.i][3])+25:Y(arr[k.i][2])-18));x.font='11px system-ui'}});
+  if(main){dRSI();dMACD();}
+}
+window.addEventListener('resize',()=>{dibujar();pDib();});
+
+// ---------- Simulador ----------
+const CAP0=10000;
+const nuevoSim=()=>({cash:CAP0,pos:{},hist:[],ganadas:0,perdidas:0,pnl:0,diario:[],etiquetas:{}});
+let sim=store.get('sim')||nuevoSim();
+const guardar=()=>store.set('sim',sim);
+const ahora=()=>new Date().toLocaleString('es',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
+const cls=n=>n>=0?'up':'dn',sg=n=>(n>=0?'+':'-')+'$'+f(Math.abs(n));
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const confirmar=(t,fn)=>{try{if(tg&&tg.showConfirm)return tg.showConfirm(t,ok=>ok&&fn());}catch(e){}if(confirm(t))fn();};
+
+async function precios(){
+  const c=store.get('precios');
+  if(c&&(ahorro||Date.now()-c.t<120000))return c.v;
+  try{
+    const r=await fetch('https://api.coingecko.com/api/v3/simple/price?ids='+Object.values(IDS).join(',')+'&vs_currencies=usd');
+    if(!r.ok)throw 0;const j=await r.json();
+    const v={};for(const[k,id]of Object.entries(IDS))if(j[id])v[k]=j[id].usd;store.set('precios',{t:Date.now(),v});return v;
+  }catch(e){return c?c.v:{};}
+}
+
+async function pintarSim(){
+  const p=await precios();let val=0,flot=0,filas='';
+  for(const [s,x] of Object.entries(sim.pos)){
+    const px=p[s],fl=px?(px-x.prom)*x.cant:null;
+    val+=x.cant*(px||x.prom);if(fl!==null)flot+=fl;
+    filas+=`<div class="row"><span><b>${esc(s)}</b> ${+x.cant.toPrecision(6)}<br><span class="mut">prom $${f(x.prom)}${px?' · ahora $'+f(px):''}${x.stop?`<br>SL $${f(x.stop)} · TP $${f(x.obj)}`:''}${px&&x.stop&&px<=x.stop?' <b class="dn">⚠️ tocó stop</b>':px&&x.obj&&px>=x.obj?' <b class="up">🎯 objetivo</b>':''}</span></span><span style="text-align:right">${fl!==null?`<b class="${cls(fl)}">${sg(fl)}</b><br>`:''}<button class="mini" data-v="${esc(s)}">Vender</button></span></div>`;
+  }
+  const n=sim.ganadas+sim.perdidas;
+  $('s_res').innerHTML=`<div class="row"><span>Efectivo</span><b>$${f(sim.cash)}</b></div>
+   <div class="row"><span>Posiciones</span><b>$${f(val)}</b></div>
+   <div class="row"><span>Capital total</span><b>$${f(sim.cash+val)}</b></div>
+   <div class="row"><span>Ganancia flotante</span><b class="${cls(flot)}">${sg(flot)}</b></div>
+   <div class="row"><span>Resultado cerrado</span><b class="${cls(sim.pnl)}">${sg(sim.pnl)}</b></div>
+   <div class="row"><span>Aciertos</span><b>${n?`${sim.ganadas}/${n} (${Math.round(100*sim.ganadas/n)}%)`:'—'}</b></div>`;
+  $('s_pos').innerHTML=filas?`<b>Posiciones abiertas</b>${filas}`:'<span class="mut">No tienes posiciones abiertas.</span>';
+}
+
+function operar0(tipo){
+  const sym=$('s_sym').value.trim().toUpperCase(),cant=+$('s_cant').value,px=+$('s_px').value,razon=$('s_raz').value.trim(),m=$('s_msg');
+  const err=t=>{m.className='dn';m.textContent=t;};
+  if(!sym||!(cant>0)||!(px>0))return err('Completa activo, cantidad y precio.');
+  m.className='mut';
+  if(tipo==='COMPRA'){
+    const costo=cant*px;
+    if(costo>sim.cash)return err(`Te faltan fondos: necesitas $${f(costo)} y tienes $${f(sim.cash)}.`);
+    const p=sim.pos[sym]||{cant:0,prom:0,razon:''},tot=p.cant+cant;
+    p.prom=(p.cant*p.prom+cant*px)/tot;p.cant=tot;if(razon)p.razon=razon;p.stop=+$('s_stp').value;p.obj=+$('s_obj').value;
+    sim.pos[sym]=p;sim.cash-=costo;
+    sim.hist.push(`COMPRA ${cant} ${sym} a $${f(px)}`);
+    sim.diario.push({f:ahora(),t:Date.now(),tipo,sym,cant,precio:px,razon});
+    m.textContent=`✅ Compraste ${cant} ${sym} a $${f(px)}`;
+  }else{
+    const p=sim.pos[sym];
+    if(!p||p.cant<cant-1e-9)return err(`No tienes suficiente ${sym}. Tienes ${p?+p.cant.toPrecision(6):0}.`);
+    const g=(px-p.prom)*cant,entrada=p.razon||'';
+    sim.cash+=cant*px;sim.pnl+=g;p.cant-=cant;if(p.cant<1e-9)delete sim.pos[sym];
+    sim[g>=0?'ganadas':'perdidas']++;
+    const tags=[...new Set(entrada.toLowerCase().match(/#\w+/g)||['#sin_etiqueta'])];
+    tags.forEach(t=>{const e=sim.etiquetas[t]||(sim.etiquetas[t]={n:0,g:0,pnl:0});e.n++;e.g+=g>=0?1:0;e.pnl+=g;});
+    sim.hist.push(`VENTA ${cant} ${sym} a $${f(px)} (${sg(g)})`);
+    sim.diario.push({f:ahora(),t:Date.now(),tipo,sym,cant,precio:px,razon,entrada,pnl:g});
+    m.innerHTML=`${g>=0?'🟢':'🔴'} Vendiste ${cant} ${esc(sym)}. Resultado: <b class="${cls(g)}">${sg(g)}</b>`;
+  }
+  guardar();pintarSim();
+}
+
+function pintarDiario(){
+  const d=sim.diario.slice(-30).reverse();
+  $('s_dia').innerHTML=d.length?d.map(e=>`<div class="card"><b>${e.tipo==='COMPRA'?'🟢':'🔴'} ${e.tipo} ${+e.cant.toPrecision(6)} ${esc(e.sym)}</b> @ $${f(e.precio)}${e.pnl!==undefined?` <b class="${cls(e.pnl)}">${sg(e.pnl)}</b>`:''}<div class="mut">${e.f}</div>${e.entrada?`<div>➡️ Entrada: ${esc(e.entrada)}</div>`:''}${e.razon?`<div>${e.tipo==='COMPRA'?'💬':'⬅️ Salida:'} ${esc(e.razon)}</div>`:''}</div>`).join(''):'<div class="card mut">Tu diario está vacío. Opera con una razón y una etiqueta, por ejemplo: rebote en soporte #soporte</div>';
+}
+
+function pintarPat(){
+  const t=Object.entries(sim.etiquetas).sort((a,b)=>b[1].pnl-a[1].pnl);
+  $('s_pat').innerHTML=t.length?`<div class="card">${t.map(([k,e])=>`<div class="row"><span><b>${esc(k)}</b><br><span class="mut">${e.n} ventas · ${e.g} ganadas (${Math.round(100*e.g/e.n)}%)</span></span><b class="${cls(e.pnl)}">${sg(e.pnl)}</b></div>`).join('')}</div><div class="mut">Con pocas operaciones estos números no son concluyentes.</div>`:'<div class="card mut">Aún no hay datos. Compra con etiquetas (#ruptura, #rsi…) y, cuando vendas, aquí verás qué tipo de entrada te funciona mejor.</div>';
+}
+
+$('sub').onclick=e=>{
+  const s=e.target.dataset.s;if(!s)return;
+  $('sub').querySelectorAll('button').forEach(b=>b.classList.remove('on'));e.target.classList.add('on');
+  ['op','dia','pat','est'].forEach(k=>$('s_'+k).hidden=k!==s);
+  if(s==='dia')pintarDiario();if(s==='pat')pintarPat();if(s==='est')pintarEst();
+};
+$('s_buy').onclick=()=>operar('COMPRA');
+$('s_sell').onclick=()=>operar('VENTA');
+$('s_usar').onclick=async()=>{
+  const v=(await precios())[$('s_sym').value.trim().toUpperCase()],m=$('s_msg');
+  if(v){$('s_px').value=v;rr();m.className='mut';m.textContent='';}
+  else{m.className='dn';m.textContent='No hay precio automático para ese activo: escríbelo tú.';}
+};
+$('s_pos').onclick=e=>{
+  const s=e.target.dataset.v;if(!s||!sim.pos[s])return;
+  $('s_sym').value=s;$('s_cant').value=+sim.pos[s].cant.toPrecision(6);$('s_px').focus();
+};
+$('s_reset').onclick=()=>confirmar('¿Reiniciar el simulador con $10,000? Se borra tu diario.',()=>{
+  sim=nuevoSim();guardar();pintarSim();pintarDiario();pintarPat();
+});
+
+// ---------- Calculadora de tamaño ----------
+function calcular(){
+  const cap=+$('cap').value,rp=+$('rie').value,en=+$('ent').value,st=+$('stp').value;
+  const r=$('res');
+  if(!(cap>0&&rp>0&&en>0&&st>0)){r.innerHTML='<span class="mut">Escribe entrada y stop para calcular.</span>';return;}
+  if(st>=en){r.innerHTML='<span class="dn">El stop debe estar por debajo de la entrada.</span>';return;}
+  const riesgo=cap*rp/100,dist=en-st,cant=riesgo/dist,costo=cant*en;
+  let h=`<div><span>Riesgo</span><b>$${f(riesgo)}</b></div>
+   <div><span>Pérdida por unidad</span><b>$${f(dist)}</b></div>
+   <div><span>Compra</span><b>${+cant.toPrecision(5)} unidades</b></div>
+   <div><span>Costo</span><b>$${f(costo)}</b></div>
+   <div><span>Objetivo 1:2</span><b class="up">$${f(en+2*dist)}</b></div>
+   <div><span>Objetivo 1:3</span><b class="up">$${f(en+3*dist)}</b></div>`;
+  if(costo>cap)h+='<p class="dn">Ese tamaño cuesta más que tu capital.</p>';
+  if(rp>2)h+='<p class="dn">Más de 2% por operación es mucho riesgo.</p>';
+  r.innerHTML=h;
+}
+['cap','rie','ent','stp'].forEach(i=>$(i).oninput=calcular);
+$('usar').onclick=()=>{if(datos.length){$('ent').value=datos[datos.length-1][4];calcular();}};
+
+// ---------- Checklist ----------
+const ITEMS=['Tengo definido mi stop loss','Arriesgo 1-2% o menos de mi capital','Mi objetivo da al menos 1:2 de riesgo/beneficio','Voy a favor de la tendencia','Tengo una razón clara (soporte, ruptura, RSI…)','Estoy tranquilo, sin miedo ni euforia','Puedo aceptar esta pérdida sin que me afecte'];
+let marcas=store.get('chk')||ITEMS.map(()=>false);
+function pintarChk(){
+  $('lista').innerHTML=ITEMS.map((t,i)=>`<label class="chk"><input type="checkbox" data-i="${i}" ${marcas[i]?'checked':''}><span style="color:var(--tx);font-size:15px">${t}</span></label>`).join('');
+  const n=marcas.filter(Boolean).length;
+  $('veredicto').innerHTML=n===ITEMS.length?'<b class="up">✅ Todo en orden. Puedes registrar tu operación en el bot.</b>':`<b>${n}/${ITEMS.length}</b> <span class="mut">Si algo falta, mejor espera: no entrar también es una decisión válida.</span>`;
+}
+$('lista').onchange=e=>{marcas[+e.target.dataset.i]=e.target.checked;store.set('chk',marcas);pintarChk();};
+$('reset').onclick=()=>{marcas=ITEMS.map(()=>false);store.set('chk',marcas);pintarChk();};
+
+// ---------- Glosario ----------
+const GLO=[
+['Spread','Diferencia entre el precio de compra y el de venta. Es un costo de operar.'],
+['Long','Comprar esperando que el precio suba.'],
+['Short','Vender (apostar) esperando que el precio baje.'],
+['Stop loss','Orden que cierra tu operación si el precio llega a cierto nivel en contra.'],
+['Take profit','Orden que cierra tu operación al llegar a tu objetivo de ganancia.'],
+['Soporte','Zona donde el precio suele frenar su caída.'],
+['Resistencia','Zona donde el precio suele frenar su subida.'],
+['Vela japonesa','Figura que resume apertura, cierre, máximo y mínimo de un periodo.'],
+['Media móvil','Promedio del precio de los últimos N periodos; suaviza el ruido.'],
+['RSI','Indicador de 0 a 100. Sobre 70 suele verse como sobrecompra y bajo 30 como sobreventa.'],
+['Volatilidad','Cuánto y qué tan rápido se mueve el precio.'],
+['Liquidez','Facilidad para comprar o vender sin mover mucho el precio.'],
+['Apalancamiento','Operar con más dinero del que tienes; amplifica ganancias y pérdidas.'],
+['Drawdown','Caída de tu cuenta desde su máximo hasta un mínimo posterior.'],
+['Slippage','Diferencia entre el precio que esperabas y el precio al que se ejecutó.'],
+['Orden límite','Se ejecuta solo al precio que fijas o mejor.'],
+['Orden de mercado','Se ejecuta de inmediato al precio actual.'],
+['Pip','Movimiento mínimo habitual en divisas (0.0001 en la mayoría de pares).']
+];
+function pintarGlo(q=''){
+  q=q.toLowerCase();
+  $('terminos').innerHTML=GLO.filter(([t,d])=>(t+d).toLowerCase().includes(q)).map(([t,d])=>`<dt>${t}</dt><dd>${d}</dd>`).join('')||'<p class="mut">Sin resultados.</p>';
+}
+$('buscar').oninput=e=>pintarGlo(e.target.value);
+
+// ---------- Nuevas funciones ----------
+const QZ=[["¿Qué muestra una vela verde?", ["Cerró más alto de lo que abrió", "Cerró más bajo", "No hubo movimiento"], 0], ["¿Cuándo defines tu stop loss?", ["Después de perder", "Antes de entrar", "Nunca"], 1], ["Una relación 1:2 significa…", ["Arriesgo 2 para ganar 1", "Arriesgo 1 para ganar 2", "Gano siempre el doble"], 1], ["¿Qué % del capital se suele arriesgar por operación?", ["1-2%", "20%", "50%"], 0], ["RSI sobre 70 suele indicar…", ["Sobrecompra", "Sobreventa", "Nada"], 0], ["Máximos y mínimos más altos indican…", ["Tendencia bajista", "Tendencia alcista", "Lateral"], 1], ["Si el precio se acerca a tu stop, tú…", ["Lo alejas", "Lo respetas", "Duplicas la compra"], 1], ["Con apalancamiento 10x, ¿qué caída liquida la cuenta?", ["Cerca de 10%", "50%", "90%"], 0], ["La media móvil de 20 es el promedio de…", ["Los últimos 20 cierres", "Los 20 máximos más altos", "20 días fijos"], 0], ["¿Qué es un soporte?", ["Zona donde el precio suele frenar su caída", "Un tipo de orden", "Un indicador"], 0], ["Perdiste 3 veces seguidas. Lo mejor es…", ["Subir el tamaño para recuperar", "Pausar y revisar tu plan", "Quitar los stops"], 1], ["Con 40% de aciertos y relación 1:2, a largo plazo…", ["Pierdes", "Puedes ganar", "Empatas siempre"], 1]];
+const TUT=['📈 Gráfico y 🎯 Práctica: mira velas reales y practica con datos pasados, sin esperar días.','💼 Simulador y 📐 Tamaño: opera con $10,000 ficticios, con stop y objetivo, y calcula cuánto arriesgar.','📘 Lecciones y ❓ Quiz para aprender. ✅ Checklist antes de cada operación.'];
+let ahorro=!!store.get('ahorro'),P=null,Q={i:0,s:0,r:0};
+const ind={sma:false,rsi:false,bb:false,macd:false};
+const uso=n=>{if(n)store.set('uso',(store.get('uso')||0)+n);$('uso').textContent='Datos usados: '+f((store.get('uso')||0)/1024,1)+' KB'+(ahorro?' · usando solo lo guardado':'')};
+$('ahorro').onchange=e=>{ahorro=e.target.checked;store.set('ahorro',ahorro);uso()};
+const SMA=(a,n)=>a.map((_,i)=>i<n-1?null:a.slice(i-n+1,i+1).reduce((t,c)=>t+c[4],0)/n);
+function RSI(a,n=14){const r=[null];let g=0,l=0;for(let i=1;i<a.length;i++){const d=a[i][4]-a[i-1][4],u=Math.max(d,0),w=Math.max(-d,0);
+ if(i<=n){g+=u/n;l+=w/n;if(i<n){r.push(null);continue}}else{g=(g*(n-1)+u)/n;l=(l*(n-1)+w)/n}
+ r.push(l?100-100/(1+g/l):100)}return r}
+function dRSI(){const c=$('cvr');c.hidden=!ind.rsi;if(!ind.rsi||!datos.length)return;
+ const W=c.clientWidth,H=c.clientHeight,r=devicePixelRatio||1;c.width=W*r;c.height=H*r;const x=c.getContext('2d');x.scale(r,r);
+ x.font='10px system-ui';x.fillStyle=x.strokeStyle='#888';
+ [30,70].forEach(v=>{const y=H-v/100*H;x.globalAlpha=.3;x.beginPath();x.moveTo(0,y);x.lineTo(W-58,y);x.stroke();x.globalAlpha=1;x.fillText(v,W-52,y+3)});
+ const cw=(W-62)/datos.length;x.strokeStyle=x.fillStyle='#a855f7';x.beginPath();let k=0;
+ RSI(datos).forEach((v,i)=>{if(v==null)return;const X=4+i*cw+cw/2,Y=H-v/100*H;k++?x.lineTo(X,Y):x.moveTo(X,Y)});x.stroke();x.fillText('RSI 14',4,10)}
+$('inds').onclick=e=>{const i=e.target.dataset.i;if(!i)return;ind[i]=!ind[i];e.target.classList.toggle('on',ind[i]);dibujar();pDib()};
+
+// Simulador: stop/objetivo
+function rr(){const p=+$('s_px').value,s=+$('s_stp').value,o=+$('s_obj').value,q=+$('s_cant').value||0;
+ $('s_rr').innerHTML=p>0&&s>0&&o>0&&s<p&&o>p?`Arriesgas $${f((p-s)*q)} para ganar $${f((o-p)*q)} → relación <b class="${(o-p)/(p-s)>=2?'up':'dn'}">1:${f((o-p)/(p-s),2)}</b>`:'';}
+['s_px','s_stp','s_obj','s_cant'].forEach(i=>$(i).oninput=rr);
+function operar(tipo){
+ if(tipo==='COMPRA'){const p=+$('s_px').value,s=+$('s_stp').value,o=+$('s_obj').value,m=$('s_msg');
+  if(!(p>0&&s>0&&o>0)||s>=p||o<=p){m.className='dn';m.textContent='Para comprar define un stop (debajo del precio) y un objetivo (encima).';return}
+  const r=(o-p)/(p-s);return confirmar(`Relación riesgo/beneficio 1:${f(r,2)}${r<2?' (menor a 1:2, poco favorable)':''}. ¿Confirmar compra?`,()=>operar0(tipo));}
+ operar0(tipo);}
+function linea(cv,a){const W=cv.clientWidth,H=cv.clientHeight,r=devicePixelRatio||1;cv.width=W*r;cv.height=H*r;const x=cv.getContext('2d');x.scale(r,r);
+ const hi=Math.max(...a),lo=Math.min(...a),R=hi-lo||1;x.strokeStyle=a[a.length-1]>=a[0]?'#16a34a':'#dc2626';x.lineWidth=2;x.beginPath();
+ a.forEach((v,i)=>{const X=8+i*(W-16)/Math.max(1,a.length-1),Y=H-8-(v-lo)/R*(H-16);i?x.lineTo(X,Y):x.moveTo(X,Y)});x.stroke()}
+function pintarEst(){
+ const t=sim.diario.filter(e=>e.pnl!==undefined).map(e=>e.pnl);
+ if(!t.length){$('s_est').innerHTML='<div class="card mut">Aún no hay ventas cerradas.</div>';return}
+ let c=CAP0,pk=CAP0,dd=0;const eq=[c];t.forEach(g=>{c+=g;eq.push(c);pk=Math.max(pk,c);dd=Math.max(dd,pk-c)});
+ const w=t.filter(x=>x>=0),l=t.filter(x=>x<0),av=a=>a.length?a.reduce((q,x)=>q+x,0)/a.length:0;
+ $('s_est').innerHTML=`<div class="card"><b>Curva de capital</b><canvas id="cve" style="height:140px"></canvas></div><div class="card"><div class="row"><span>Operaciones cerradas</span><b>${t.length}</b></div><div class="row"><span>Ganancia promedio</span><b class="up">${sg(av(w))}</b></div><div class="row"><span>Pérdida promedio</span><b class="dn">${sg(av(l))}</b></div><div class="row"><span>Mejor / peor</span><b>${sg(Math.max(...t))} / ${sg(Math.min(...t))}</b></div><div class="row"><span>Caída máxima</span><b class="dn">-$${f(dd)}</b></div><div class="row"><span>Esperanza por operación</span><b class="${cls(av(t))}">${sg(av(t))}</b></div></div><div class="mut">Con pocas operaciones, un resultado positivo puede ser suerte. Busca esperanza positiva sostenida en decenas de operaciones.</div>`;
+ linea($('cve'),eq);}
+
+// Práctica en histórico
+async function ohlc(a,d){const k=`ohlc_${a}_${d}`,c=store.get(k);if(c&&(ahorro||Date.now()-c.t<600000))return c.d;
+ try{const r=await fetch(`https://api.coingecko.com/api/v3/coins/${IDS[a]}/ohlc?vs_currency=usd&days=${d}`);if(!r.ok)throw 0;const tx=await r.text();uso(tx.length);const j=JSON.parse(tx);store.set(k,{t:Date.now(),d:j});return j}catch(e){return c?c.d:[]}}
+const PA=()=>{const o=store.get('pra')||{};return{n:0,g:0,p:0,cap:10000,tags:{},err:{},h:[],b:[],em:{},log:[],pr:{b:{n:0,g:0,p:0},m:{n:0,g:0,p:0}},tm:{n:0,b:0},...(o.cap?o:{})}};
+const CH=[['🥉 Primera operación',(h,z)=>z.n>=1],['🎯 Gana 3 de tus últimas 5',h=>h.length>=5&&h.slice(-5).filter(x=>x.w).length>=3],['⚖️ 5 seguidas con riesgo/beneficio ≥ 1:2',h=>h.length>=5&&h.slice(-5).every(x=>x.rr>=2)],['🧼 3 entradas limpias seguidas',h=>h.length>=3&&h.slice(-3).every(x=>x.ok)],['🏆 20 operaciones y resultado positivo',(h,z)=>z.n>=20&&z.p>0],['📈 Practica trailing o salida parcial',(h,z)=>(z.adv||0)>=1]];
+const settle=()=>{if(P&&P.rev){P.i+=P.rev;P.rev=0}};
+async function pNueva(){
+ const a=$('p_a').value,d=await ohlc(a,+$('p_d').value);
+ if(d.length<70){$('p_t').textContent='Sin datos';$('p_i').textContent='Necesitas conexión la primera vez para descargar el histórico.';return}
+ POFF=0;P={d,a,i:30+Math.floor(rnd(a)*(d.length-60)),pos:null,m:[],tr:[],rev:0};P.s0=P.i;P.c0=PA().cap;$('p_f').hidden=true;pDib();pInfo();}
+function pInfo(t){if(!P)return;const z=PA(),q=P.pos;$('p_t').textContent=`${P.a} · $${f(P.d[P.i][4])} · Capital $${f(z.cap)}`;
+ $('p_i').style.whiteSpace='pre-line';
+ $('p_i').textContent=t||(q?`En posición ${q.dir>0?'larga':'corta'}: entrada $${f(q.e)} · tamaño ${+q.u.toPrecision(4)}\nStop $${f(q.sl)}${q.trail?' (trailing)':''} · objetivo $${f(q.tp)}${q.auto&&q.part===undefined?' · ½ en $'+f(q.p1):''}${q.part!==undefined?' · ½ ya cerrada ('+sg(q.part)+')':''}\n${pProcTxt(q)} · ${q.em}`:'Sin posición: ¿compras, vendes en corto o esperas?');
+ const tg=Object.entries(z.tags).sort((a,b)=>b[1].p-a[1].p),er=Object.entries(z.err).sort((a,b)=>b[1]-a[1]),em=Object.entries(z.em).sort((a,b)=>a[1].p-b[1].p),lg=z.log.slice(-5).reverse(),pr=z.pr;
+ const fila=(k,e)=>`<div class="row"><span>${k} <span class="mut">${e.n} · ${e.n?Math.round(100*e.g/e.n):0}%</span></span><b class="${cls(e.p)}">${sg(e.p)}</b></div>`;
+ $('p_r').innerHTML=`<b>Tu práctica</b><div class="row"><span>Operaciones / aciertos</span><b>${z.n}${z.n?` · ${Math.round(100*z.g/z.n)}%`:''}</b></div><div class="row"><span>Resultado acumulado</span><b class="${cls(z.p)}">${sg(z.p)}</b></div>${z.tm.n?`<div class="row"><span>Tramos que superan a comprar y mantener</span><b>${z.tm.b}/${z.tm.n}</b></div>`:''}${tg.length?'<div class="mut" style="margin-top:8px">Qué razón te funciona</div>'+tg.map(([k,e])=>`<div class="row"><span>${k} <span class="mut">${e.n} · ${Math.round(100*e.g/e.n)}%</span></span><b class="${cls(e.p)}">${sg(e.p)}</b></div>`).join(''):''}${pr.b.n+pr.m.n?'<div class="mut" style="margin-top:8px">📋 Proceso vs resultado (3-4 pts = bien ejecutada)</div>'+fila('Bien ejecutadas',pr.b)+fila('Mal ejecutadas',pr.m)+(pr.m.g?`<div class="rec">⚠️ ${pr.m.g} operación(es) mal ejecutadas salieron ganadoras: fue suerte, no método.</div>`:''):''}${em.length?'<div class="mut" style="margin-top:8px">😰 Cómo te sentías</div>'+em.map(([k,e])=>fila(esc(k),e)).join(''):''}${lg.length?'<div class="mut" style="margin-top:8px">Últimas operaciones</div>'+lg.map(e=>`<div class="row"><span>${e.g>=0?'🟢':'🔴'} ${e.dir>0?'▲':'▼'} ${e.tag} <span class="mut">· Proceso ${e.sc}/4 · ${esc(e.em)}</span></span><b class="${cls(e.g)}">${sg(e.g)}</b></div>`).join(''):''}${er.length?'<div class="mut" style="margin-top:8px">Tus errores más comunes</div>'+er.map(([k,n])=>`<div class="row"><span>${k}</span><b>${n}</b></div>`).join(''):''}<button class="mini" data-x="1" style="margin-top:8px">Reiniciar práctica</button>`;
+ $('p_ch').innerHTML='<b>🏅 Retos</b>'+CH.map(([n])=>`<div class="row"><span>${z.b.includes(n)?'✅':'⬜'} ${n}</span></div>`).join('');}
+let PZ=60,POFF=0;
+const zc=v=>Math.max(25,Math.min(200,Math.round(v)));
+function pDib(){if(!P)return;const e0=P.i+P.rev,z=Math.min(zc(PZ),e0+1);POFF=Math.max(0,Math.min(POFF,e0+1-z));P.ze=z;
+ const e=e0-POFF,o=Math.max(0,e-z+1),L=[];
+ if(P.pos)L.push({v:P.pos.e,c:'#888'},{v:P.pos.sl,c:'#dc2626'},{v:P.pos.tp,c:'#16a34a'});
+ if(P.pos&&P.pos.auto&&P.pos.part===undefined)L.push({v:P.pos.p1,c:'#f59e0b'});
+ $('z_n').textContent=`${z} velas`;$('z_p').hidden=!POFF;
+ dibujar($('cvp'),P.d.slice(o,e+1),{sma:!$('p_h').checked,bb:!$('p_h').checked&&!!ind.bb,lines:L,box:P.pos?{i:P.pos.i-o,e:P.pos.e,sl:P.pos.sl,tp:P.pos.tp}:null,mark:P.m.map(k=>({...k,i:k.i-o})),time:true,i0:o,past:POFF>0});}
+function pProc(q){const x=P.d,i0=q.i,er=[];
+ const atr=x.slice(Math.max(0,i0-14),i0+1).reduce((t,c)=>t+c[2]-c[3],0)/Math.min(15,i0+1),rsi=RSI(x)[i0],sm=SMA(x,20)[i0];
+ if(Math.abs(q.e-q.sl0)<atr)er.push('stop cercano');
+ if(q.dir>0&&rsi>70||q.dir<0&&rsi<30)er.push('RSI extremo');
+ if(sm&&(q.dir>0?q.e<sm:q.e>sm))er.push('contra tendencia');
+ if(q.rr<2)er.push('R/R bajo');
+ const it={riesgo:q.rk<=2,rr:q.rr>=2,tend:!er.includes('contra tendencia'),stop:!er.includes('stop cercano')};
+ return{er,it,rsi,sc:Object.values(it).filter(Boolean).length};}
+const pProcTxt=q=>{const o=v=>v?'✅':'❌';return`📋 Proceso ${q.sc}/4: ${o(q.it.riesgo)} riesgo ≤2% · ${o(q.it.rr)} 1:2 o más · ${o(q.it.tend)} a favor de la tendencia · ${o(q.it.stop)} stop con espacio`};
+function pEntra(dir){if(!P||P.pos)return;settle();POFF=0;const e=P.d[P.i][4],sl=+$('p_sl').value,tp=+$('p_tp').value,rk=+$('p_rk').value,z=PA();
+ if(!(sl>0&&sl<50&&tp>0&&rk>0))return pInfo('Define stop %, objetivo % y riesgo %.');
+ const slp=e*(1-dir*sl/100),tpp=e*(1+dir*tp/100),u=Math.min(z.cap*rk/100/Math.abs(e-slp),z.cap/e),d0=Math.abs(e-slp);
+ P.pos={e,sl:slp,sl0:slp,tp:tpp,i:P.i,dir,u,tag:$('p_tg').value,rr:tp/sl,rk,em:$('p_em').value,co:+$('p_co').value||0,d0,trail:$('p_tr').checked?d0:0,auto:$('p_pp').checked,p1:e+dir*d0};
+ Object.assign(P.pos,pProc(P.pos));const q=P.pos;
+ P.m.push({i:P.i,p:e,t:dir>0?'▲':'▼',c:'#2481cc',l:dir>0?'Compra':'Corto'});$('p_f').hidden=true;
+ pInfo(`${dir>0?'Compra':'Corto'} a $${f(e)} · tamaño ${+u.toPrecision(4)} (arriesgas $${f(u*d0)}) · 1:${f(tp/sl,2)}\n${pProcTxt(q)} · ${q.em}${q.trail?'\n📈 Trailing activo: el stop subirá con el precio.':''}${q.auto?`\n½ Se cerrará la mitad en $${f(q.p1)} (1:1).`:''}`);pDib();}
+function pMitad(v){const q=P.pos,h=q.u/2,g=(v-q.e)*q.dir*h-h*q.e*(q.co||0)/100*2,z=PA();
+ z.cap+=g;z.p+=g;store.set('pra',z);q.u=h;q.part=g;
+ P.m.push({i:P.i,p:v,t:'½',c:'#f59e0b',l:sg(g)});return g;}
+function pCierra(v,t){const q=P.pos,x=P.d,z=PA(),pa=q.part||0,g=(v-q.e)*q.dir*q.u-q.u*q.e*(q.co||0)/100*2,tot=g+pa,er=q.er,sc=q.sc,em=q.em||'—',w=tot>=0?1:0;
+ const TXT={'stop cercano':'Tu stop estaba a menos de una vela promedio: el ruido normal pudo sacarte.','RSI extremo':`Entraste con RSI en ${f(q.rsi,0)}, zona extrema.`,'contra tendencia':'Entraste contra la media de 20 (contra la tendencia).','R/R bajo':'Tu relación riesgo/beneficio era menor a 1:2.'};
+ z.n++;z.g+=w;z.p+=g;z.cap+=g;const T=z.tags[q.tag]||(z.tags[q.tag]={n:0,g:0,p:0});T.n++;T.g+=w;T.p+=tot;
+ er.forEach(k=>z.err[k]=(z.err[k]||0)+1);
+ const E1=z.em[em]||(z.em[em]={n:0,g:0,p:0});E1.n++;E1.g+=w;E1.p+=tot;
+ const B=sc>=3?z.pr.b:z.pr.m;B.n++;B.g+=w;B.p+=tot;
+ if(q.trail||q.part!==undefined)z.adv=(z.adv||0)+1;
+ z.log=[...z.log,{dir:q.dir,tag:q.tag,em,sc,g:tot}].slice(-30);
+ z.h=[...z.h,{w:tot>=0,rr:q.rr,ok:!er.length}].slice(-20);
+ const nu=CH.filter(([n,fn])=>!z.b.includes(n)&&fn(z.h,z)).map(c=>c[0]);z.b.push(...nu);store.set('pra',z);
+ P.tr.push({g:tot,tag:q.tag,er,sc,em});P.m.push({i:P.i,p:v,t:'●',c:tot>=0?'#16a34a':'#dc2626',l:sg(tot)});P.pos=null;
+ const nx=x.slice(P.i+1,P.i+11);P.rev=nx.length;let rv='';
+ if(nx.length){const hN=Math.max(...nx.map(c=>c[2])),lN=Math.min(...nx.map(c=>c[3])),ok=q.dir>0?hN>=q.tp:lN<=q.tp;
+  rv=`Qué habría pasado: en las ${nx.length} velas siguientes el precio llegó de $${f(lN)} a $${f(hN)}. ${ok?'Tu objetivo sí se alcanzaba'+(t==='🛑 Stop'?': quizás el stop era muy ajustado.':'.'):'Tu objetivo no se alcanzaba.'}`}
+ const luck=sc<3&&tot>=0?'<div style="margin-top:6px">⚠️ Ganaste con una entrada mal ejecutada: fue suerte, no método.</div>':sc>=3&&tot<0?'<div style="margin-top:6px">Perdiste con buen proceso: es parte del juego. Lo que cuenta es repetir el método.</div>':'';
+ $('p_f').hidden=false;$('p_f').innerHTML=`<b>${tot>=0?'🟢':'🔴'} ${t}: ${sg(tot)} · Proceso ${sc}/4 · ${esc(em)}</b>${q.co||q.part!==undefined?`<div class="mut">${q.co?'Incluye costos de $'+f(q.u*q.e*q.co/100*2,2):''}${q.part!==undefined?(q.co?' · ':'')+'incluye la mitad cerrada antes: '+sg(pa):''}</div>`:''}<div class="mut" style="margin-top:4px">${pProcTxt(q)}</div><div>${er.length?er.map(k=>'• '+TXT[k]).join('<br>'):'✅ Entrada ordenada: stop razonable, a favor de la tendencia y con buena relación.'}</div>${luck}<div class="mut" style="margin-top:6px">${rv}</div>${nu.length?`<div style="margin-top:6px">🏅 ¡Reto cumplido: ${nu.join(', ')}!</div>`:''}`;}
+const stopTxt=q=>q.sl===q.sl0?'🛑 Stop':q.trail&&q.moved?'📈 Stop dinámico (trailing)':'🔒 Stop movido';
+function pPaso(n){if(!P)return;settle();POFF=0;let fin=false,msg;
+ for(let k=0;k<n;k++){if(P.i>=P.d.length-1){fin=true;break}
+  P.i++;const c=P.d[P.i],q=P.pos;
+  if(q){if(q.dir>0?c[3]<=q.sl:c[2]>=q.sl){pCierra(q.sl,stopTxt(q));msg=undefined;break}
+   if(q.auto&&q.part===undefined&&(q.dir>0?c[2]>=q.p1:c[3]<=q.p1)){const g=pMitad(q.p1);msg=`½ Primer objetivo: cerraste la mitad en $${f(q.p1)} (${sg(g)} asegurados). El resto sigue.`}
+   if(q.dir>0?c[2]>=q.tp:c[3]<=q.tp){pCierra(q.tp,'🎯 Objetivo');msg=undefined;break}
+   if(q.trail){const ns=q.dir>0?c[2]-q.trail:c[3]+q.trail;if(q.dir>0?ns>q.sl:ns<q.sl){q.sl=ns;q.moved=true}}}}
+ pInfo(fin?'Fin de los datos: pulsa Terminar para ver tu resumen.':msg);pDib();}
+function pResumen(){if(!P||P.res)return;P.res=1;const c=$('p_sm'),z=PA(),t=P.tr;c.hidden=false;
+ if(P.i-P.s0<1){c.innerHTML='<b>🏁 Resumen del tramo</b><div class="mut">Este tramo no avanzó ninguna vela: no hay nada que comparar.</div>';return}
+ const p0=P.d[P.s0][4],p1=P.d[P.i][4],cap=P.c0,bh=cap*(p1/p0-1)-cap*(+$('p_co').value||0)/100*2,pn=t.reduce((q,x)=>q+x.g,0),
+  lo=Math.min(...P.d.slice(P.s0,P.i+1).map(k=>k[3])),dd=lo/p0-1,pc=v=>(v>=0?'+':'')+f(100*v/cap,2)+'%',nv=P.i-P.s0,
+  head=`<b>🏁 Resumen del tramo</b> <span class="mut">(${nv} velas)</span>`,
+  bhRow=`<div class="row"><span>Comprar y mantener (todo el capital)</span><b class="${cls(bh)}">${sg(bh)} · ${pc(bh)}</b></div><div class="row"><span>Peor momento de mantener</span><b class="dn">${f(100*dd,2)}%</b></div>`;
+ if(!t.length){c.innerHTML=`${head}<div class="row"><span>Tus operaciones</span><b>0 · $0</b></div>${bhRow}<div class="mut" style="margin-top:6px">${bh>=0?'No operar te dejó fuera de la subida, pero esperar una entrada que cumpla tu plan es una decisión válida.':'No operar te libró de la caída de este tramo: esperar también es una posición.'}</div>`;return}
+ const w=t.filter(x=>x.g>=0).length,ec={},sp=t.reduce((q,x)=>q+x.sc,0)/t.length;t.forEach(x=>x.er.forEach(k=>ec[k]=(ec[k]||0)+1));const top=Object.entries(ec).sort((a,b)=>b[1]-a[1])[0],gana=pn>bh;
+ z.tm.n++;if(gana)z.tm.b++;store.set('pra',z);
+ c.innerHTML=`${head}<div class="row"><span>Operaciones</span><b>${t.length}</b></div><div class="row"><span>Aciertos</span><b>${w}/${t.length}</b></div><div class="row"><span>Proceso promedio</span><b>${f(sp,1)}/4</b></div><div class="row"><span>Tu resultado</span><b class="${cls(pn)}">${sg(pn)} · ${pc(pn)}</b></div>${bhRow}<div class="mut" style="margin-top:6px">${gana?`Superaste a comprar y mantener por $${f(pn-bh)}.`:`Comprar y mantener te ganó por $${f(bh-pn)}: ¿tus entradas superaron al azar?`} Has superado a comprar y mantener en ${z.tm.b} de ${z.tm.n} tramos.</div><div class="mut" style="margin-top:6px">Ojo: mantener usa todo tu capital y tú arriesgas solo ${f(+$('p_rk').value||1)}% por operación, así que la comparación en dólares favorece a mantener cuando el mercado sube mucho. Un solo tramo no demuestra nada.</div><div class="mut" style="margin-top:6px">${top?`Error más repetido: <b>${top[0]}</b> (${top[1]} veces). Trabájalo en el próximo tramo.`:'Sin errores marcados. ¡Muy bien!'}</div>`;}
+(()=>{const cv=$('cvp'),ptr={};let g={};
+ const ks=()=>Object.keys(ptr),pan=()=>({m:'p',x:ptr[ks()[0]],off:POFF});
+ cv.addEventListener('pointerdown',e=>{if(!P)return;try{cv.setPointerCapture(e.pointerId)}catch(_){}ptr[e.pointerId]=e.clientX;const k=ks();
+  g=k.length===1?pan():{m:'z',d:Math.abs(ptr[k[0]]-ptr[k[1]])||1,z:P.ze||PZ};});
+ cv.addEventListener('pointermove',e=>{if(!P||!(e.pointerId in ptr))return;ptr[e.pointerId]=e.clientX;const k=ks();
+  if(k.length>=2&&g.m==='z'){PZ=zc(g.z*g.d/(Math.abs(ptr[k[0]]-ptr[k[1]])||1));pDib();}
+  else if(k.length===1&&g.m==='p'){const cw=(cv.clientWidth-62)/(P.ze||60);POFF=Math.max(0,g.off+Math.round((e.clientX-g.x)/cw));pDib();}});
+ const fin=e=>{delete ptr[e.pointerId];g=ks().length===1?pan():{};};
+ cv.addEventListener('pointerup',fin);cv.addEventListener('pointercancel',fin);
+ cv.addEventListener('wheel',e=>{if(!P)return;e.preventDefault();const a=P.ze||PZ,n=zc(a*(e.deltaY>0?1.15:1/1.15));PZ=n===a?zc(a+(e.deltaY>0?1:-1)):n;pDib();},{passive:false});
+ $('z_i').onclick=()=>{if(!P)return;const a=P.ze||PZ;PZ=zc(a*.75);if(PZ===a)PZ=zc(a-1);pDib();};
+ $('z_o').onclick=()=>{if(!P)return;const a=P.ze||PZ;PZ=zc(a*1.33);if(PZ===a)PZ=zc(a+1);pDib();};
+ $('z_p').onclick=()=>{POFF=0;pDib();};
+})();
+$('p_b').onclick=()=>pEntra(1);$('p_k').onclick=()=>pEntra(-1);
+$('pra').querySelectorAll('[data-w]').forEach(b=>b.onclick=()=>pPaso(+b.dataset.w));
+$('p_c').onclick=()=>{if(P&&P.pos){settle();pCierra(P.d[P.i][4],'Cerrada');pInfo();pDib()}};
+$('p_n').onclick=pNueva;$('p_a').onchange=$('p_d').onchange=pNueva;$('p_h').onchange=pDib;
+$('p_e').onclick=()=>{if(P&&P.pos){settle();pCierra(P.d[P.i][4],'Cerrada')}pResumen();pNueva();};
+$('p_r').onclick=e=>{if(e.target.dataset.x)confirmar('¿Borrar tu progreso de práctica?',()=>{store.set('pra',null);pInfo()})};
+
+// ================= Práctica: mejoras =================
+function rnd(a){
+  if(!$('p_dia').checked)return Math.random();
+  let h=0;const s=new Date().toISOString().slice(0,10)+a+$('p_d').value;
+  for(const c of s)h=(h*31+c.charCodeAt(0))|0;
+  h=Math.imul(h^h>>>15,2246822507);
+  return((h^h>>>13)>>>0)/4294967296;
+}
+$('p_dia').onchange=pNueva;
+$('p_s').onclick=()=>{
+  if(!P||!P.pos)return pInfo('Abre una posición primero.');
+  settle();const q=P.pos,c=P.d[P.i][4];
+  if(q.dir>0?c<=q.e:c>=q.e)return pInfo('Solo puedes mover el stop a tu entrada cuando la operación va ganando.');
+  q.sl=q.e;pInfo('🔒 Stop movido a tu entrada: ya no puedes perder en esta operación (salvo costos).');pDib();
+};
+$('p_m').onclick=()=>{
+  if(!P||!P.pos)return pInfo('Abre una posición primero.');
+  if(P.pos.part!==undefined)return pInfo('Ya cerraste la mitad de esta operación.');
+  settle();const g=pMitad(P.d[P.i][4]);
+  pInfo(`½ Cerraste la mitad: ${sg(g)} asegurados. El resto sigue con tu stop y objetivo.`);pDib();
+};
+$('p_tr').onchange=()=>{
+  if(!P||!P.pos)return;const q=P.pos;
+  q.trail=$('p_tr').checked?q.d0:0;
+  pInfo(q.trail?'📈 Trailing activo: el stop sube con el precio, nunca baja.':'Trailing apagado: el stop se queda donde está.');pDib();
+};
+$('p_pp').onchange=()=>{
+  if(!P||!P.pos)return;const q=P.pos;
+  if(q.part!==undefined){$('p_pp').checked=false;return pInfo('Ya cerraste la mitad de esta operación.');}
+  q.auto=$('p_pp').checked;
+  pInfo(q.auto?`½ Se cerrará la mitad en $${f(q.p1)} (1:1).`:'Cierre automático de la mitad desactivado.');pDib();
+};
+
+
+// ================= Indicadores: Bollinger y MACD =================
+const BB=(a,n=20,k=2)=>a.map((_,i)=>{if(i<n-1)return null;const s=a.slice(i-n+1,i+1).map(c=>c[4]),m=s.reduce((t,v)=>t+v,0)/n,sd=Math.sqrt(s.reduce((t,v)=>t+(v-m)**2,0)/n);return[m-k*sd,m+k*sd]});
+const EMA=(v,n)=>{const k=2/(n+1);let e=null;return v.map(x=>(e=e==null?x:x*k+e*(1-k)))};
+function dMACD(){
+  const c=$('cvm');c.hidden=!ind.macd;if(!ind.macd||!datos.length)return;
+  const W=c.clientWidth,H=c.clientHeight,r=devicePixelRatio||1;c.width=W*r;c.height=H*r;
+  const x=c.getContext('2d');x.scale(r,r);x.font='10px system-ui';
+  if(datos.length<35){x.fillStyle='#888';x.fillText('MACD: pocos datos en este rango (usa 7d o 30d).',4,14);return}
+  const cl=datos.map(d=>d[4]),m=EMA(cl,12).map((v,i)=>v-EMA(cl,26)[i]),sg2=EMA(m,9),h=m.map((v,i)=>v-sg2[i]);
+  const mx=Math.max(...m.slice(26).map(Math.abs),...h.slice(26).map(Math.abs))||1,Y=v=>H/2-v/mx*(H/2-6),cw=(W-62)/datos.length;
+  x.fillStyle='#888';x.globalAlpha=.3;x.fillRect(0,H/2,W-58,1);x.globalAlpha=1;
+  h.forEach((v,i)=>{if(i<26)return;x.fillStyle=v>=0?'#16a34a':'#dc2626';x.globalAlpha=.55;x.fillRect(4+i*cw+cw*.15,Math.min(Y(v),H/2),cw*.7,Math.abs(Y(v)-H/2));x.globalAlpha=1});
+  [[m,'#2481cc'],[sg2,'#f59e0b']].forEach(([a,col])=>{x.strokeStyle=col;x.lineWidth=1.5;x.beginPath();a.forEach((v,i)=>{if(i<26)return;const X=4+i*cw+cw/2;i===26?x.moveTo(X,Y(v)):x.lineTo(X,Y(v))});x.stroke()});
+  x.lineWidth=1;x.fillStyle='#888';x.fillText('MACD 12-26-9',4,10);
+}
+
+// ================= Entrenador con reglas =================
+function entrenador(){
+  const V=sim.diario.filter(e=>e.pnl!==undefined),z=PA(),n=V.length+z.n;
+  if(n<5)return`<div class="card"><b>🏋️ Tu entrenador</b><div class="mut">Necesito al menos 5 operaciones cerradas (simulador + práctica) para darte un diagnóstico útil. Llevas ${n}.</div></div>`;
+  const F=[],C=[],av=a=>a.length?a.reduce((t,v)=>t+v,0)/a.length:0;
+  // Resultado y relación ganancia/pérdida (simulador)
+  if(V.length>=5){
+    const w=V.filter(e=>e.pnl>=0).map(e=>e.pnl),l=V.filter(e=>e.pnl<0).map(e=>e.pnl),ex=av(V.map(e=>e.pnl));
+    if(l.length&&w.length&&Math.abs(av(l))>av(w))C.push([2,`Tus pérdidas promedio (${sg(av(l))}) son mayores que tus ganancias (${sg(av(w))}). Corta antes lo que sale mal o deja correr más lo que sale bien.`]);
+    else if(w.length&&l.length)F.push(`Tus ganancias promedio (${sg(av(w))}) superan a tus pérdidas (${sg(av(l))}).`);
+    ex>=0?F.push(`Esperanza positiva en el simulador: ${sg(ex)} por operación. Confírmala con más operaciones.`):C.push([1,`Esperanza negativa en el simulador (${sg(ex)} por operación). Revisa qué tipo de entradas la hunden.`]);
+    // Racha actual
+    let r=0;for(let i=V.length-1;i>=0&&V[i].pnl<0;i--)r++;
+    if(r>=2)C.push([0,`Llevas ${r} pérdidas seguidas. Haz una pausa y revisa tu diario antes de volver a operar.`]);
+    // Proceso
+    const P=V.filter(e=>e.sc!==undefined);
+    if(P.length>=3){const ok=P.filter(e=>e.sc>=3).length/P.length;
+      if(ok<.7){const fal={stop:0,riesgo:0,rr:0,razon:0};P.forEach(e=>e.it&&Object.keys(fal).forEach(k=>{if(!e.it[k])fal[k]++}));
+        const T={stop:'poner stop',riesgo:'arriesgar 2% o menos',rr:'buscar relación 1:2 o mejor',razon:'anotar tu razón'},top=Object.entries(fal).sort((a,b)=>b[1]-a[1])[0];
+        C.push([1,`Solo ${Math.round(100*ok)}% de tus operaciones cumplen tu proceso.${top&&top[1]?` Lo que más fallas: ${T[top[0]]}.`:''}`])}
+      else F.push(`${Math.round(100*ok)}% de tus operaciones siguen tu proceso. Buen hábito.`)}
+    // Emociones
+    const EM={};V.forEach(e=>{if(e.em){const t=EM[e.em]=EM[e.em]||{n:0,p:0};t.n++;t.p+=e.pnl}});
+    const em=Object.entries(EM).filter(([,t])=>t.n>=3).sort((a,b)=>a[1].p-b[1].p);
+    if(em.length&&em[0][1].p<0)C.push([1,`Con el estado ${em[0][0]} pierdes ${sg(em[0][1].p)} en ${em[0][1].n} operaciones. Si te sientes así, no operes.`]);
+    if(em.length>1&&em[em.length-1][1].p>0)F.push(`Operas mejor con el estado ${em[em.length-1][0]} (${sg(em[em.length-1][1].p)}).`);
+  }
+  // Razones (simulador + práctica)
+  const ET={};
+  Object.entries(sim.etiquetas||{}).forEach(([k,e])=>{const t=ET[k]=ET[k]||{n:0,p:0};t.n+=e.n;t.p+=e.pnl});
+  Object.entries(z.tags||{}).forEach(([k,e])=>{const t=ET[k]=ET[k]||{n:0,p:0};t.n+=e.n;t.p+=e.p});
+  const et=Object.entries(ET).filter(([k,t])=>t.n>=3&&k!=='#sin_etiqueta'&&k!=='#otra').sort((a,b)=>b[1].p-a[1].p);
+  if(et.length&&et[0][1].p>0)F.push(`Tu mejor razón de entrada es ${et[0][0]}: ${sg(et[0][1].p)} en ${et[0][1].n} operaciones.`);
+  if(et.length>1&&et[et.length-1][1].p<0)C.push([2,`La razón ${et[et.length-1][0]} te cuesta ${sg(et[et.length-1][1].p)} en ${et[et.length-1][1].n} operaciones. Sé más exigente con ella.`]);
+  // Errores de práctica
+  const er=Object.entries(z.err||{}).sort((a,b)=>b[1]-a[1])[0];
+  if(er&&er[1]>=2)C.push([2,`En la práctica tu error más repetido es «${er[0]}» (${er[1]} veces).`]);
+  C.sort((a,b)=>a[0]-b[0]);
+  const li=a=>a.length?'<ul style="margin:6px 0 0;padding-left:18px">'+a.map(t=>`<li>${t}</li>`).join('')+'</ul>':'<div class="mut">Aún no hay suficientes datos en esta parte.</div>';
+  return`<div class="card"><b>🏋️ Tu entrenador</b> <span class="mut">(según ${n} operaciones)</span>
+<div class="rec">🎯 <b>Foco de la semana:</b> ${C.length?C[0][1]:'mantén tu plan y sigue sumando operaciones.'}</div>
+<div style="margin-top:8px"><b class="up">Lo que haces bien</b>${li(F.slice(0,3))}</div>
+<div style="margin-top:8px"><b class="dn">A corregir</b>${li(C.slice(0,3).map(c=>c[1]))}</div>
+<div class="mut" style="margin-top:8px">Son reglas automáticas sobre tus datos, no consejos financieros. Con pocas operaciones pueden ser suerte.</div></div>`;
+}
+
+// ================= Revisión semanal con metas =================
+const wkStart=(t=Date.now())=>{const d=new Date(t);d.setHours(0,0,0,0);d.setDate(d.getDate()-((d.getDay()+6)%7));return d.getTime()};
+const SEM=()=>store.get('sem')||{metas:{sc:80,ops:15,perd:5},notas:{}};
+function guardarSem(){const s=SEM();s.metas={sc:+$('w_sc').value||80,ops:Math.round(+$('w_ops').value)||15,perd:+$('w_perd').value||5};
+  s.notas[wkStart()]={a:$('w_a').value,c:$('w_c').value};store.set('sem',s);pintarDs();}
+function semana(){
+  const s=SEM(),k=wkStart(),M=s.metas,N=s.notas[k]||{a:'',c:''},d0=e=>(e.t||0)>=k;
+  const E=sim.diario.filter(d0),C=E.filter(e=>e.tipo==='COMPRA'),S=E.filter(e=>e.pnl!==undefined),net=S.reduce((t,e)=>t+e.pnl,0);
+  const CS=C.filter(e=>e.sc!==undefined),pct=CS.length?Math.round(100*CS.filter(e=>e.sc>=3).length/CS.length):null,perd=Math.max(0,-net)/capTotal()*100;
+  const m=(ok,t)=>`<div class="row"><span>${ok===null?'⏳':ok?'✅':'❌'} ${t}</span></div>`;
+  const hist=[1,2,3,4].map(i=>{const a=k-i*6048e5,b=a+6048e5,Q=sim.diario.filter(e=>e.t>=a&&e.t<b),V=Q.filter(e=>e.pnl!==undefined);
+    if(!Q.length)return'';const p=V.reduce((t,e)=>t+e.pnl,0);
+    return`<div class="row"><span>Semana del ${new Date(a).toLocaleDateString('es',{day:'2-digit',month:'2-digit'})}<br><span class="mut">${Q.filter(e=>e.tipo==='COMPRA').length} compras · ${V.length?V.filter(e=>e.pnl>=0).length+'/'+V.length+' aciertos':'sin ventas'}</span></span><b class="${cls(p)}">${sg(p)}</b></div>`}).join('');
+  return`<div class="card"><b>📅 Revisión semanal</b> <span class="mut">(desde el lunes ${new Date(k).toLocaleDateString('es',{day:'2-digit',month:'2-digit'})})</span>
+<div class="row"><span>Compras / ventas</span><b>${C.length} / ${S.length}</b></div><div class="row"><span>Resultado</span><b class="${cls(net)}">${sg(net)}</b></div>
+<div class="mut" style="margin-top:8px">Tus metas</div>
+<div class="g2"><div><label>Compras con proceso (%)</label><input id="w_sc" type="number" inputmode="decimal" value="${M.sc}"></div><div><label>Máx. compras</label><input id="w_ops" type="number" inputmode="decimal" value="${M.ops}"></div><div><label>Pérdida máx. (%)</label><input id="w_perd" type="number" inputmode="decimal" value="${M.perd}"></div></div>
+${m(pct===null?null:pct>=M.sc,`Proceso: ${pct===null?'sin compras con puntaje':pct+'% (meta '+M.sc+'%)'}`)}${m(C.length<=M.ops,`Compras: ${C.length} (máx. ${M.ops})`)}${m(perd<=M.perd,`Pérdida de la semana: ${f(perd,1)}% (máx. ${M.perd}%)`)}
+<label>¿Qué aprendí esta semana?</label><textarea id="w_a" rows="2" style="width:100%;padding:10px;border-radius:10px;border:1px solid var(--mut);background:var(--bg);color:var(--tx);font:inherit">${esc(N.a)}</textarea>
+<label>¿Qué voy a corregir la próxima?</label><textarea id="w_c" rows="2" style="width:100%;padding:10px;border-radius:10px;border:1px solid var(--mut);background:var(--bg);color:var(--tx);font:inherit">${esc(N.c)}</textarea>
+${hist?'<div class="mut" style="margin-top:8px">Semanas anteriores</div>'+hist:''}</div>`;
+}
+
+
+// Lecciones (con ejemplos y gráficos)
+const SV={
+vela:`<rect x="55" y="45" width="14" height="45" fill="#16a34a"/><line x1="62" y1="15" x2="62" y2="115" stroke="#16a34a" stroke-width="2"/>
+<text class="m" x="76" y="19">Máximo</text><text class="m" x="76" y="49">Cierre</text><text class="m" x="76" y="94">Apertura</text><text class="m" x="76" y="119">Mínimo</text><text class="t" x="62" y="136" text-anchor="middle">Alcista</text>
+<rect x="205" y="45" width="14" height="45" fill="#dc2626"/><line x1="212" y1="15" x2="212" y2="115" stroke="#dc2626" stroke-width="2"/>
+<text class="m" x="226" y="49">Apertura</text><text class="m" x="226" y="94">Cierre</text><text class="t" x="212" y="136" text-anchor="middle">Bajista</text>`,
+tend:`<polyline points="5,100 25,75 40,85 60,55 75,65 95,35" fill="none" stroke="#16a34a" stroke-width="2.5"/>
+<polyline points="105,35 125,60 140,50 160,80 175,70 195,100" fill="none" stroke="#dc2626" stroke-width="2.5"/>
+<polyline points="205,70 225,55 240,75 260,55 275,75 295,62" fill="none" stroke="#888" stroke-width="2.5"/>
+<text class="t" x="50" y="125" text-anchor="middle">Alcista</text><text class="t" x="150" y="125" text-anchor="middle">Bajista</text><text class="t" x="250" y="125" text-anchor="middle">Lateral</text>`,
+sr:`<line x1="0" y1="40" x2="300" y2="40" stroke="#dc2626" stroke-dasharray="5 4"/><line x1="0" y1="100" x2="300" y2="100" stroke="#16a34a" stroke-dasharray="5 4"/>
+<text class="m" x="4" y="34">Resistencia</text><text class="m" x="4" y="116">Soporte</text>
+<polyline points="10,98 45,44 80,97 115,42 150,99 185,45 225,82 265,50 292,46" fill="none" style="stroke:var(--tx)" stroke-width="2"/>`,
+media:`<polyline points="5,100 30,70 55,95 80,60 105,85 130,50 155,75 180,45 205,70 230,40 255,65 292,38" fill="none" stroke="#888" stroke-width="2"/>
+<polyline points="5,90 55,82 105,70 155,60 205,52 255,46 292,42" fill="none" style="stroke:var(--bt)" stroke-width="3"/>
+<text class="m" x="6" y="128">— Precio</text><text class="t" x="70" y="128" style="fill:var(--bt)">— Media móvil</text>`,
+rsi:`<rect x="0" y="43" width="300" height="44" fill="#888" opacity=".08"/>
+<line x1="0" y1="43" x2="300" y2="43" stroke="#dc2626" stroke-dasharray="5 4"/><line x1="0" y1="87" x2="300" y2="87" stroke="#16a34a" stroke-dasharray="5 4"/>
+<text class="m" x="4" y="38">70 sobrecompra</text><text class="m" x="4" y="101">30 sobreventa</text>
+<polyline points="5,70 40,50 70,32 100,55 130,90 160,102 190,75 220,45 250,35 292,60" fill="none" stroke="#a855f7" stroke-width="2.5"/>`,
+stop:`<line x1="0" y1="85" x2="300" y2="85" stroke="#16a34a" stroke-dasharray="5 4"/><text class="m" x="4" y="79">Soporte</text>
+<line x1="0" y1="110" x2="300" y2="110" stroke="#dc2626" stroke-width="2"/><text class="m" x="4" y="125">Stop loss: un poco debajo del soporte</text>
+<polyline points="10,40 50,55 90,84 120,64 160,50 205,36 250,28" fill="none" style="stroke:var(--tx)" stroke-width="2"/>
+<circle cx="90" cy="84" r="5" fill="#16a34a"/><text class="t" x="98" y="102">Entrada</text>`,
+riesgo:`<rect x="30" y="20" width="240" height="50" fill="#16a34a" opacity=".18"/><rect x="30" y="70" width="240" height="25" fill="#dc2626" opacity=".18"/>
+<line x1="30" y1="20" x2="270" y2="20" stroke="#16a34a" stroke-width="2"/><line x1="30" y1="70" x2="270" y2="70" style="stroke:var(--tx)" stroke-width="2"/><line x1="30" y1="95" x2="270" y2="95" stroke="#dc2626" stroke-width="2"/>
+<text class="t" x="36" y="15">Objetivo</text><text class="t" x="36" y="65">Entrada</text><text class="t" x="36" y="110">Stop</text>
+<text class="t" x="150" y="49" text-anchor="middle" style="fill:#16a34a">Beneficio: 2</text><text class="t" x="150" y="86" text-anchor="middle" style="fill:#dc2626">Riesgo: 1</text>`,
+apal:`<text class="t" x="6" y="22">Tu capital: $1,000</text><rect x="6" y="28" width="29" height="22" style="fill:var(--bt)"/>
+<text class="t" x="6" y="76">Posición con 10x: $10,000</text><rect x="6" y="82" width="288" height="22" style="fill:var(--bt)" opacity=".5"/>
+<text class="m" x="6" y="126">Caída de 10% en la posición = $1,000 = todo tu capital</text>`
+};
+// [título, gráfico, [párrafos], ejemplo, recuerda]
+const LEC=[
+["Qué es operar","",["Operar (hacer trading) es comprar un activo —cripto, oro, acciones— esperando venderlo más caro. Ganas si el precio se mueve a tu favor y pierdes si se mueve en contra.","La meta no es acertar siempre, sino <b>perder poco cuando fallas y ganar más cuando aciertas</b>."],"Compras 0.01 BTC a $65,000 (costo $650). Si sube a $66,300 ganas $13; si baja a $63,700 pierdes $13.","Puedes perder dinero. Aprende primero en el simulador."],
+["Velas japonesas","vela",["Cada vela resume un periodo (una hora, un día…). El <b>cuerpo</b> va de la apertura al cierre y las <b>mechas</b> llegan al máximo y al mínimo.","Verde: cerró más arriba de donde abrió. Roja: cerró más abajo."],"Un activo abre en $100, sube hasta $107, baja a $98 y cierra en $105: vela verde con cuerpo de $5 y mechas hasta $107 y $98.","Cuerpo grande = movimiento fuerte. Una mecha larga suele indicar que el precio fue rechazado en esa zona."],
+["Tendencia","tend",["<b>Alcista</b>: máximos y mínimos cada vez más altos. <b>Bajista</b>: cada vez más bajos. <b>Lateral</b>: el precio se mueve en un rango sin dirección.","Operar a favor de la tendencia suele ser más fácil que ir en contra."],"Si en cuatro semanas los mínimos son 60, 62, 64 y 66 mil, hay tendencia alcista: busca compras, no ventas en corto.","Mira primero el gráfico de 30 o 90 días para ver la tendencia antes de decidir."],
+["Soporte y resistencia","sr",["<b>Soporte</b>: zona donde el precio suele frenar su caída y rebotar. <b>Resistencia</b>: zona donde suele frenar su subida y devolverse.","Mientras más veces toca una zona sin romperla, más importante es. Si la rompe, a veces el soporte pasa a ser resistencia y al revés."],"BTC rebotó tres veces cerca de $60,000: ahí hay un soporte. Un plan posible: entrar cerca de $60,200 con el stop en $59,500, debajo del soporte.","Son zonas, no líneas exactas. Deja un pequeño margen."],
+["Media móvil","media",["Es el promedio de los últimos N cierres. Al recalcularse en cada vela forma una línea suave que muestra la dirección y reduce el ruido.","Precio sobre la media suele indicar fuerza; debajo, debilidad."],"Cierres de 5 días: 10, 12, 11, 13, 14 → media = 60 ÷ 5 = 12. Si el día siguiente cierra en 15, sale el 10 y la media pasa a 65 ÷ 5 = 13.","Llega con retraso: confirma lo que ya pasó, no predice."],
+["RSI","rsi",["Mide la fuerza de los últimos movimientos en una escala de 0 a 100. Sobre 70 se considera <b>sobrecompra</b> (subió mucho y rápido); bajo 30, <b>sobreventa</b>."],"Si el RSI de BTC marca 78 tras una subida fuerte, quizá no sea buen momento para comprar. Pero en tendencias fuertes puede quedarse sobre 70 por semanas.","No es una señal automática de giro. Úsalo junto con tendencia, soporte y resistencia."],
+["Stop loss","stop",["Es el nivel donde aceptas que te equivocaste y cierras para limitar la pérdida. Defínelo <b>antes</b> de entrar y ponlo en un lugar con sentido: un poco debajo de un soporte, no a una distancia arbitraria."],"Compras en $60,200 con el stop en $59,500: si el soporte se rompe, pierdes $700 por BTC y sales. Sin stop, esa pérdida podría crecer mucho más.","Nunca alejes el stop cuando el precio se acerca."],
+["Objetivo y riesgo/beneficio","riesgo",["Antes de entrar compara cuánto puedes perder (hasta el stop) con cuánto puedes ganar (hasta el objetivo). Una relación <b>1:2</b> significa arriesgar 1 para ganar 2."],"Entrada $65,000, stop $63,700 (−$1,300), objetivo $67,600 (+$2,600): relación 1:2. Acertando solo 4 de cada 10: 4×2 = +8 y 6×(−1) = −6, resultado +2 unidades de riesgo.","Busca al menos 1:2. Si el mercado no te lo ofrece, no entres."],
+["Tamaño de posición","",["Arriesga solo <b>1–2% de tu capital</b> por operación. Para lograrlo: cantidad = dinero que aceptas perder ÷ distancia entre la entrada y el stop."],"Capital $10,000 → riesgo 1% = $100. Entrada $65,000 y stop $63,700 (distancia $1,300): cantidad = 100 ÷ 1,300 = 0.0769 BTC. Si toca el stop, pierdes $100.","La pestaña 📐 Tamaño hace este cálculo por ti."],
+["Apalancamiento","apal",["Permite operar con más dinero del que tienes. Multiplica las ganancias, pero también las pérdidas, y un movimiento pequeño puede liquidar tu cuenta."],"Con $1,000 y apalancamiento 10x controlas $10,000. Si el precio sube 5% ganas $500 (50% de tu capital); si baja 10%, pierdes $1,000: toda la cuenta.","Siendo principiante, evítalo. Primero aprende a ser rentable sin apalancamiento."],
+["Psicología","",["Casi siempre los errores vienen de las emociones: miedo a perderse un movimiento, euforia tras ganar y rabia tras perder.","Un plan escrito y el checklist te ayudan a decidir con la cabeza fría."],"Pierdes $100 y quieres «recuperarlo» comprando el doble. Esa operación impulsiva suele terminar en otra pérdida mayor. Regla simple: tras 2 pérdidas seguidas, haz una pausa.","Si no puedes explicar tu razón en una frase, no entres."],
+["Diario y revisión","",["Anota cada operación con su razón y una etiqueta (#soporte, #ruptura, #rsi). Cada semana revisa qué tipo de entrada te funciona y qué errores repites."],"Si tus entradas con #soporte ganan 60% y las de #noticia solo 20%, ya sabes dónde enfocarte.","Lo que no se mide no se mejora: usa Diario, Patrones y Stats."],
+["Tipos de órdenes","",["<b>De mercado</b>: se ejecuta ya al precio actual. <b>Límite</b>: solo al precio que fijas o mejor. <b>Stop loss</b>: cierra si el precio va en tu contra hasta cierto nivel. <b>Take profit</b>: cierra al llegar a tu objetivo."],"BTC está en $65,000 y quieres comprar más barato: orden límite de compra en $64,000. Ya comprado, stop en $62,700 y take profit en $66,600 (relación 1:2).","Define stop y objetivo antes de entrar, no después."],
+["Errores de principiante","",["• Operar demasiado.<br>• Usar apalancamiento alto.<br>• Seguir rumores o «señales» de otros.<br>• Mover el stop para no aceptar la pérdida.<br>• No llevar un registro."],"Si cambias el stop de $63,700 a $62,000 «para darle espacio», tu pérdida potencial pasa de $1,300 a $3,000 por BTC: más del doble.","Corregir un error por semana es un buen plan."],
+["Plan de práctica","",["1) Elige BTC u oro y mira el gráfico de 30 o 90 días.<br>2) Identifica tendencia, soporte y resistencia.<br>3) Define entrada, stop y objetivo (mínimo 1:2).<br>4) Calcula el tamaño y regístralo en el simulador con tu razón y una etiqueta.<br>5) Cierra por stop u objetivo, no por emoción.<br>6) Revisa tus patrones cada semana."],"Meta inicial: 20–30 operaciones en el simulador o en 🎯 Práctica antes de sacar conclusiones.","Con pocas operaciones los porcentajes no dicen mucho: la constancia es lo que cuenta."],
+["BTC y oro: qué cambia","",["BTC suele moverse mucho más que el oro. Eso da más oportunidades, pero también pérdidas más rápidas.","El oro tiende a ser más tranquilo y suele usarse como refugio en épocas de incertidumbre."],"Si en un día BTC se mueve 5% y el oro 1%, con $1,000 la diferencia es $50 contra $10.","Elige el activo según la volatilidad que puedes soportar y ajusta el tamaño a eso."],
+["Horarios y liquidez","",["Cripto opera las 24 horas, todos los días. El oro físico (spot) opera casi todo el día de lunes a viernes. Las acciones, solo en horario de bolsa. El XAU de esta app sale de un token (PAXG) que se mueve las 24 horas.","Con poca liquidez (madrugada, fines de semana) los movimientos pueden ser bruscos y el spread más ancho."],"Dejas una compra abierta el viernes en un mercado con horario: el fin de semana puede haber un salto de precio sin que puedas reaccionar.","Antes de dejar una operación abierta, piensa en qué momento del día y de la semana estás."],
+["Spread y comisiones","",["Cada operación tiene un costo: el spread (diferencia entre el precio de compra y el de venta) y a veces comisiones.","Si operas mucho, esos costos se comen tus ganancias aunque aciertes."],"Pagas $2 de costo por operación y haces 50: son $100. Si tu ganancia bruta fue $120, solo te quedaron $20.","Cuenta siempre los costos antes de decidir cuántas operaciones hacer."],
+["Marcos temporales","tend",["El marco temporal es lo que representa cada vela: 1 hora, 4 horas, 1 día. Los marcos largos muestran la tendencia; los cortos, el momento de entrada.","Un movimiento que parece enorme en 1 hora puede ser un simple retroceso en el gráfico diario."],"El gráfico diario sube. En el de 1 hora hay una caída: no es una tendencia bajista, es un retroceso dentro de una subida.","Empieza por el marco largo y baja al corto solo para afinar la entrada."],
+["Estructura: máximos y mínimos","tend",["La estructura es la secuencia de máximos y mínimos. Mientras cada mínimo sea más alto que el anterior, la subida sigue sana.","Cuando el precio pierde el último mínimo importante, la estructura se rompe y la tendencia puede estar cambiando."],"Mínimos en 60,000, 62,000 y 64,000: estructura alcista. Si luego cae a 63,000, el último mínimo (64,000) se rompió: señal de alerta.","Un stop justo debajo del último mínimo importante suele tener sentido."],
+["Rupturas","sr",["Una ruptura ocurre cuando el precio cierra por encima de una resistencia (o debajo de un soporte) con fuerza.","Lo ideal es esperar el cierre de la vela, no entrar solo porque el precio la tocó."],"La resistencia está en 66,000. Una vela cierra en 66,500: ruptura. Entrada 66,600 con stop en 65,700, debajo de la zona rota.","Una ruptura necesita confirmación: cierre fuerte y, si hay datos, más volumen."],
+["Rupturas falsas","sr",["A veces el precio supera una resistencia, atrae compradores y vuelve a caer por debajo. Se llama ruptura falsa.","Son comunes: por eso se espera el cierre y se usa stop."],"El precio sube a 66,300 y la vela cierra en 65,700, otra vez debajo de 66,000. Quien compró arriba queda atrapado.","Si el precio regresa dentro del rango, respeta el stop: no esperes que vuelva a romper."],
+["Retrocesos (pullbacks)","tend",["En una tendencia alcista el precio sube y baja un poco antes de seguir. Esas bajadas cortas son retrocesos.","Comprar en un retroceso hacia un soporte o una media suele dar mejor relación riesgo/beneficio que comprar en el techo."],"El precio sube de 60,000 a 66,000 y baja a 64,000, donde hay soporte. Entrada 64,200 con stop en 63,500: arriesgas 700 y apuntas a 66,000 o más.","La paciencia de esperar el retroceso evita comprar caro."],
+["Cruce de medias","media",["Cuando una media corta (por ejemplo la de 50) cruza por encima de una larga (la de 200) se llama cruz dorada. El cruce contrario es la cruz de la muerte.","Son señales lentas: confirman una tendencia, pero cuando aparecen ya pasó buena parte del movimiento."],"La media de 50 sube de 61,000 a 62,500 y cruza sobre la de 200, que está en 62,000: cruce alcista.","Úsalo para confirmar la dirección, no como única señal de entrada."],
+["Media simple y exponencial","media",["La media simple trata todos los cierres igual. La exponencial (EMA) da más peso a los más recientes y reacciona más rápido.","Con una EMA de 9 periodos: EMA nueva = precio × 0.2 + EMA anterior × 0.8."],"EMA anterior 100 y precio actual 110: EMA nueva = 110×0.2 + 100×0.8 = 22 + 80 = 102.","Más rápida no significa mejor: reacciona antes, pero también da más señales falsas."],
+["Volumen","",["El volumen es cuánto se negoció en un periodo. Un movimiento con mucho volumen suele tener más respaldo que uno con poco.","Una ruptura con volumen alto es más creíble que una con volumen bajo."],"El volumen promedio es 1,000 y la vela de ruptura marca 2,200: más del doble, así que la ruptura tiene más respaldo.","El volumen confirma; por sí solo no te dice hacia dónde irá el precio."],
+["Velas de rechazo (martillo)","vela",["Una vela con mecha muy larga y cuerpo pequeño muestra que el precio fue empujado y rechazado. Si la mecha apunta hacia abajo en un soporte, se llama martillo.","Indica que los compradores defendieron esa zona."],"BTC cae a 59,000 pero cierra en 60,300 tras abrir en 60,000: cuerpo de 300 y mecha inferior de 1,000, sobre un soporte.","Ninguna vela es señal por sí sola: busca que coincida con una zona importante."],
+["Vela envolvente","vela",["Una envolvente alcista es una vela verde cuyo cuerpo cubre por completo el cuerpo de la vela roja anterior.","Sugiere que los compradores tomaron el control, sobre todo si aparece en un soporte tras una caída."],"Vela roja: abre 100 y cierra 98. Vela verde siguiente: abre 97.5 y cierra 101. Su cuerpo cubre el de la roja.","Confírmala con el contexto: soporte, tendencia y un stop definido."],
+["Doji e indecisión","vela",["Un doji es una vela cuya apertura y cierre casi coinciden: el cuerpo es diminuto.","Muestra indecisión; tras un gran movimiento puede avisar de una pausa o de un cambio."],"Abre 100.00, sube a 102, baja a 98 y cierra en 100.10: cuerpo de 0.10 y mechas largas a ambos lados.","No operes solo por un doji: espera a ver qué hace la siguiente vela."],
+["Doble techo y doble suelo","sr",["El doble techo ocurre cuando el precio toca dos veces la misma resistencia y no la supera; el doble suelo es lo contrario en un soporte.","La señal se confirma al romper el nivel intermedio (la línea de cuello)."],"Dos techos en 66,000 y un valle en 63,000. Si rompe 63,000, el objetivo estimado es 63,000 − (66,000 − 63,000) = 60,000.","El objetivo es solo una estimación: pon siempre un stop."],
+["Mercados laterales","sr",["En un rango el precio rebota entre un soporte y una resistencia. Se compra cerca del soporte y se vende cerca de la resistencia.","El peligro es la ruptura del rango: el stop debe quedar fuera de él."],"Rango entre 62,000 y 66,000. Entrada 62,200, stop 61,500 (riesgo 700), objetivo 64,000 (beneficio 1,800): relación de casi 1:2.6.","Si el rango se rompe, la estrategia de rebotes deja de funcionar: sal."],
+["Divergencias del RSI","rsi",["Hay divergencia cuando el precio hace un nuevo máximo pero el RSI hace uno más bajo. Sugiere que el impulso se debilita.","Es una advertencia, no una orden de vender."],"El precio llega a 66,000 con RSI 75 y luego a 67,000 con RSI 68: nuevo máximo de precio, pero con menos fuerza.","Combínala con una resistencia o una vela de rechazo antes de actuar."],
+["MACD básico","media",["El MACD resta una media exponencial de 26 periodos a una de 12. Su línea de señal es una media de 9 periodos del propio MACD.","Cuando el MACD cruza por encima de su señal suele indicar impulso alcista; por debajo, bajista."],"MACD en −50 y señal en −40: el MACD está debajo. Pasa a −35 mientras la señal queda en −38: cruzó hacia arriba.","Como la media móvil, llega con retraso: confirma, no predice."],
+["Bandas de Bollinger","media",["Son una media móvil de 20 periodos con dos bandas a 2 desviaciones estándar por encima y por debajo.","Cuando las bandas se estrechan hay poca volatilidad; cuando se abren, el precio se mueve fuerte."],"Media de 20 = 100 y desviación = 2: banda superior 104 y banda inferior 96.","Tocar una banda no es señal de giro: en tendencias fuertes el precio puede «caminar» sobre ella."],
+["ATR: medir la volatilidad","stop",["El ATR es el rango promedio de las últimas velas: cuánto se mueve normalmente el precio.","Un stop más corto que el ruido normal te saca por nada. Muchos operadores lo ponen a 1.5 veces el ATR."],"ATR = 800 y entrada en 65,000: stop a 1.5×800 = 1,200 de distancia, es decir, 63,800.","Si el stop adecuado queda lejos, compra menos cantidad; no lo acerques."],
+["Trailing stop","stop",["Un trailing stop se va subiendo a medida que el precio avanza a tu favor, para proteger ganancias.","Un paso común: al llegar a 1:2, mover el stop a tu precio de entrada.","🎯 Practícalo en la pestaña Práctica: activa «Trailing stop» antes de entrar y mira cómo sube el stop vela a vela."],"Entrada 65,000 y stop 63,700. El precio llega a 67,600 (1:2): subes el stop a 65,000 y ya no puedes perder en esa operación.","Nunca bajes el stop; solo muévelo a favor de la operación."],
+["Salidas parciales","riesgo",["Consiste en cerrar parte de la posición en un primer objetivo y dejar el resto correr.","Reduce el riesgo y la ansiedad, aunque limita la ganancia máxima.","🎯 Practícalo en la pestaña Práctica: activa «Cerrar la mitad automáticamente» o usa el botón ½ durante la operación."],"Compras 0.08 BTC en 65,000 con stop en 63,700 (riesgo $104). Vendes 0.04 en 66,300 (+$52) y dejas 0.04 hasta 68,900 (+$156 si llega).","Decide el plan de salida antes de entrar, no durante la operación."],
+["Esperanza matemática","riesgo",["Es lo que ganas en promedio por operación: aciertos × ganancia promedio − fallos × pérdida promedio.","Si es positiva, tu método gana a largo plazo aunque pierdas muchas veces."],"Aciertos 40%, ganancia 2R, pérdida 1R: 0.4×2 − 0.6×1 = +0.2R por operación. Con R = $100 y 100 operaciones: unos +$2,000.","Con pocas operaciones domina la suerte: necesitas decenas para ver la realidad."],
+["Rachas de pérdidas","",["Aunque tu método sea bueno, las rachas perdedoras son normales.","Con 40% de aciertos, la probabilidad de perder 5 seguidas en un momento dado es 0.6×0.6×0.6×0.6×0.6 ≈ 7.8%."],"En 100 operaciones es muy probable ver una racha de 6 o más pérdidas. Con riesgo de 1% sigues vivo; con 10%, pierdes casi la mitad de la cuenta.","Prueba la pestaña 🧪 Riesgo para ver tus propias rachas."],
+["Drawdown","",["Es la caída de tu capital desde su máximo. Mide cuánto aguantas por el camino.","Perder 20% exige ganar 25% para recuperarte; perder 50% exige ganar 100%."],"Un capital de $10,000 que baja a $8,000 (−20%) necesita subir $2,000, es decir 25%, para volver a $10,000.","Tu primer objetivo no es ganar rápido, sino mantener el drawdown pequeño."],
+["Diversificación y correlación","",["No es poner el dinero en muchas cosas, sino en cosas que no se muevan igual. Varias criptos suelen subir y bajar juntas.","Tres compras de criptos distintas pueden comportarse como una sola gran apuesta."],"Compras tres criptos arriesgando 1% en cada una. Si el mercado cae, las tres pueden tocar el stop: pierdes cerca de 3%, no 1%.","Cuenta el riesgo de ideas relacionadas como una sola operación."],
+["Riesgo total abierto","",["Además del riesgo por operación, limita el riesgo de todas las posiciones abiertas a la vez.","Una regla común es no pasar de 5% o 6% del capital en riesgo al mismo tiempo."],"Capital $10,000. Tres operaciones abiertas con riesgo de $100, $100 y $150: $350 en total = 3.5%. Aún hay espacio para otra pequeña.","Revisa el riesgo total antes de cada nueva entrada."],
+["Tu plan de trading","",["Un plan escrito decide por ti cuando hay emociones. Debe incluir qué activos operas, qué señal buscas, cuánto arriesgas, cuándo no operas y tus límites diarios.","Se mejora con el diario, no con intuiciones sueltas."],"Plan: operar BTC y oro; entrar solo en soporte con tendencia alcista; riesgo 1%; máximo 3 operaciones al día; parar tras 2 pérdidas seguidas.","Escribe tu plan en 🛡️ Disciplina → Mis reglas personales."],
+["Sobreoperar","",["Operar sin una buena razón, por aburrimiento o ansiedad, es una de las formas más comunes de perder.","Más operaciones significan más costos y más oportunidades de cometer errores."],"Si haces 10 operaciones al día pero solo 2 cumplen tu plan, las otras 8 son ruido que cuesta dinero y atención.","Menos operaciones, de mejor calidad. No operar también es una decisión."],
+["Sesgos mentales","",["<b>Sesgo de confirmación</b>: buscas solo información que apoya lo que ya piensas. <b>Aversión a la pérdida</b>: una pérdida suele doler más de lo que alegra una ganancia igual.","Por eso mucha gente corta sus ganancias pronto y deja correr sus pérdidas."],"Compras BTC y solo lees opiniones que dicen que subirá. Ignoras las señales de debilidad del gráfico.","Antes de entrar, pregúntate: ¿qué tendría que pasar para que me equivoque?"],
+["Operar por venganza","",["Después de una pérdida, la rabia te empuja a entrar rápido para recuperarla. Casi siempre rompe tus reglas.","La pérdida ya ocurrió: el mercado no te debe nada."],"Pierdes $100 a las 10:00 y a las 10:05 entras con el doble sin plan. Pierdes $200: la pérdida creció por la emoción.","Regla útil: tras dos pérdidas seguidas, pausa de al menos una hora."],
+["Práctica en datos pasados","",["Practicar con velas pasadas te permite hacer muchas operaciones en poco tiempo y ver qué habría pasado después.","Debes decidir con la información disponible, sin mirar adelante."],"En 🎯 Práctica haces 30 operaciones en una tarde, con stop y objetivo definidos, y revisas qué errores se repiten.","Anota tus resultados: con 30 o más operaciones empiezas a ver patrones reales."],
+["Métricas de tu diario","",["Las métricas básicas son: porcentaje de aciertos, ganancia y pérdida promedio y esperanza por operación.","Mide por separado el proceso (seguiste tu plan) y el resultado (ganaste)."],"20 operaciones: 8 ganan 2R de promedio y 12 pierden 1R. Esperanza = (8×2 − 12×1) ÷ 20 = +0.2R por operación.","Una operación mal ejecutada que gana por suerte sigue siendo una mala operación."],
+["Estafas y seguridad","",["Desconfía de quien promete ganancias fijas, de los grupos de «señales seguras» y de quien te pide depositar dinero para «multiplicarlo».","Nunca compartas tu clave, tu código de verificación ni las 12 o 24 palabras de tu billetera."],"Te ofrecen 10% semanal «garantizado». Compuesto durante un año serían 1.1^52 ≈ 142 veces tu dinero. Nadie puede garantizar algo así.","Si suena demasiado bueno para ser verdad, probablemente lo sea."],
+["Del simulador al dinero real","",["Antes de usar dinero real: al menos 50 operaciones, esperanza positiva y varias semanas respetando tus reglas.","Si das el paso, empieza con una cantidad pequeña que puedas perder sin que te afecte."],"Con una cuenta real de $200 y riesgo de 1%, cada operación arriesga $2. Es poco, pero te enseña a manejar emociones reales.","Verifica qué plataformas están disponibles y son legales para ti, y desconfía de las que no tengan reglas claras."]
+];
+let lc=null;
+function pintarLes(){
+  const h=store.get('les')||[],n=h.filter(Boolean).length,v=$('les');
+  if(lc===null){
+    v.innerHTML=`<div class="card"><b>${n}/${LEC.length}</b> lecciones completadas<div class="bar"><i style="width:${100*n/LEC.length}%"></i></div></div><div class="card">${LEC.map((l,i)=>`<div class="lec" data-i="${i}"><span class="num${h[i]?' okk':''}">${h[i]?'✓':i+1}</span><b>${l[0]}</b><span class="mut">›</span></div>`).join('')}</div>`;
+  }else{
+    const [t,k,p,e,r]=LEC[lc];
+    v.innerHTML=`<button class="mini" data-a="l">‹ Todas las lecciones</button><div class="card"><div class="mut">Lección ${lc+1} de ${LEC.length}</div><h3 style="margin:4px 0 8px">${t}</h3>${k?`<svg class="fig" viewBox="0 0 300 140">${SV[k]}</svg>`:''}${p.map(x=>`<p>${x}</p>`).join('')}<div class="ejem"><b>Ejemplo:</b> ${e}</div><div class="rec">💡 ${r}</div></div><button class="btn" data-a="m">${h[lc]?'✓ Leída (toca para desmarcar)':'Marcar como leída'}</button><div style="display:flex;gap:8px"><button class="btn" data-a="p" ${lc===0?'disabled':''}>‹ Anterior</button><button class="btn" data-a="s" ${lc===LEC.length-1?'disabled':''}>Siguiente ›</button></div>`;
+  }
+}
+$('les').onclick=e=>{
+  const r=e.target.closest('[data-i],[data-a]');if(!r)return;
+  const a=r.dataset.a;
+  if(r.dataset.i!==undefined)lc=+r.dataset.i;
+  else if(a==='l')lc=null;
+  else if(a==='p'&&lc>0)lc--;
+  else if(a==='s'&&lc<LEC.length-1)lc++;
+  else if(a==='m'){const h=store.get('les')||[];h[lc]=!h[lc];store.set('les',h);pintarLes();return;}
+  pintarLes();window.scrollTo(0,0);
+};
+
+// Quiz
+function pintarQz(){const b=(store.get('qz')||{m:0}).m;
+ if(Q.i>=QZ.length){$('qz').innerHTML=`<div class="card"><b>Puntaje: ${Q.s}/12</b><div class="mut">Mejor racha: 🔥${b}</div><button class="btn" data-n="r">Repetir</button></div>`;return}
+ const [q,o,c]=QZ[Q.i];
+ $('qz').innerHTML=`<div class="card"><div class="mut">Pregunta ${Q.i+1}/12 · Puntaje ${Q.s} · Racha 🔥${Q.r}</div><p><b>${q}</b></p>${o.map((t,k)=>`<button class="btn" data-k="${k}" style="background:${Q.a===undefined?'var(--bt)':k===c?'var(--up)':k===Q.a?'var(--dn)':'var(--card)'};color:${Q.a===undefined||k===c||k===Q.a?'var(--bx)':'var(--tx)'}">${t}</button>`).join('')}${Q.a!==undefined?'<button class="btn" data-n="1" style="background:var(--card);color:var(--tx)">Siguiente ▶</button>':''}</div>`}
+$('qz').onclick=e=>{const d=e.target.dataset;
+ if(d.n){if(d.n==='r')Q={i:0,s:0,r:0};else{Q.i++;Q.a=undefined}pintarQz();return}
+ if(d.k===undefined||Q.a!==undefined)return;const k=+d.k;Q.a=k;
+ if(k===QZ[Q.i][2]){Q.s++;Q.r++;const z=store.get('qz')||{m:0};if(Q.r>z.m)store.set('qz',{m:Q.r})}else Q.r=0;pintarQz();};
+
+// Tutorial
+function tut(n=0){const o=$('tut');o.hidden=false;o.innerHTML=`<div class="card"><p>${TUT[n]}</p><div class="mut">${n+1}/3</div><button class="btn">${n<2?'Siguiente':'Empezar'}</button></div>`;
+ o.querySelector('button').onclick=()=>{if(n<2)tut(n+1);else{o.hidden=true;store.set('tut',1)}}}
+$('vtut').onclick=()=>tut();
+$('cv').onclick=e=>{const m=e.target._m;if(!m)return;const y=e.clientY-e.target.getBoundingClientRect().top,v=m[0]-(y-m[2])/(m[3]-m[2])*(m[0]-m[1]),k='lin_'+activo,L=store.get(k)||[],j=L.findIndex(q=>Math.abs(q-v)<(m[0]-m[1])*.03);
+ j>=0?L.splice(j,1):L.push(+v.toPrecision(6));store.set(k,L);dibujar();};
+
+// ================= Laboratorio de riesgo =================
+const med=a=>{const s=[...a].sort((x,y)=>x-y);return s[Math.floor(s.length/2)]};
+const pc=(a,q)=>{const s=[...a].sort((x,y)=>x-y);return s[Math.floor(q*(s.length-1))]};
+function simRachas(w,rr,rk,n,runs){
+  const fin=[],dd=[],ml=[],cur=[];
+  for(let r=0;r<runs;r++){
+    let c=1,pk=1,d=0,l=0,m=0;const k=r<25?[1]:null;
+    for(let i=0;i<n;i++){
+      if(Math.random()<w/100){c*=1+rk/100*rr;l=0}else{c*=1-rk/100;l++;m=Math.max(m,l)}
+      pk=Math.max(pk,c);d=Math.max(d,1-c/pk);if(k)k.push(c);
+    }
+    fin.push(c);dd.push(d);ml.push(m);if(k)cur.push(k);
+  }
+  return{fin,dd,ml,cur};
+}
+function rlIn(){
+  const g=(id,a,b,d)=>Math.min(b,Math.max(a,+$(id).value||d));
+  return[g('rl_w',1,99,40),g('rl_rr',.1,20,2),g('rl_rk',.1,50,1),Math.round(g('rl_n',10,500,100))];
+}
+function curvas(cv,cur){
+  const W=cv.clientWidth,H=cv.clientHeight,r=devicePixelRatio||1;cv.width=W*r;cv.height=H*r;
+  const x=cv.getContext('2d');x.scale(r,r);
+  const all=cur.flat(),hi=Math.max(...all),lo=Math.min(...all,1),R=hi-lo||1,Y=v=>H-6-(v-lo)/R*(H-12);
+  x.strokeStyle='#888';x.globalAlpha=.6;x.setLineDash([4,4]);x.beginPath();x.moveTo(0,Y(1));x.lineTo(W,Y(1));x.stroke();x.setLineDash([]);
+  cur.forEach(k=>{x.globalAlpha=.55;x.strokeStyle=k[k.length-1]>=1?'#16a34a':'#dc2626';x.beginPath();
+    k.forEach((v,i)=>{const X=i*W/(k.length-1);i?x.lineTo(X,Y(v)):x.moveTo(X,Y(v))});x.stroke()});
+}
+function vRachas(){
+  const[w,rr,rk,n]=rlIn(),S=simRachas(w,rr,rk,n,300),ev=w/100*rr-(1-w/100);
+  $('rl_out').innerHTML=`<div class="card"><b>25 de 300 simulaciones</b><canvas id="rl_cv" style="height:200px"></canvas><div class="mut">Punteada = capital inicial. Verde: terminó arriba. Roja: terminó abajo.</div></div>
+<div class="card"><div class="row"><span>Esperanza por operación</span><b class="${cls(ev)}">${ev>=0?'+':''}${f(ev,2)} R</b></div>
+<div class="row"><span>Terminan en ganancia</span><b>${Math.round(100*S.fin.filter(v=>v>1).length/300)}%</b></div>
+<div class="row"><span>Capital final típico</span><b>$${f(CAP0*med(S.fin),0)}</b></div>
+<div class="row"><span>Caída máxima típica</span><b class="dn">-${Math.round(100*med(S.dd))}%</b></div>
+<div class="row"><span>Peor caída (1 de cada 20)</span><b class="dn">-${Math.round(100*pc(S.dd,.95))}%</b></div>
+<div class="row"><span>Racha de pérdidas (típica / máxima)</span><b>${med(S.ml)} / ${Math.max(...S.ml)}</b></div></div>
+<div class="mut">R = lo que arriesgas en una operación. Una esperanza positiva no evita las rachas malas: por eso se arriesga poco.</div>`;
+  curvas($('rl_cv'),S.cur);
+}
+function vComp(){
+  const[w,rr,,n]=rlIn();
+  $('rl_out').innerHTML=`<div class="card"><div class="row mut"><span>Riesgo</span><span>Ganan · Capital típico · Pierden más de 50%</span></div>`+
+  [1,2,5,10].map(k=>{const S=simRachas(w,rr,k,n,300);
+    return`<div class="row"><b>${k}%</b><span>${Math.round(100*S.fin.filter(v=>v>1).length/300)}% · $${f(CAP0*med(S.fin),0)} · <b class="dn">${Math.round(100*S.fin.filter(v=>v<.5).length/300)}%</b></span></div>`}).join('')+
+  `</div><div class="mut">Mismo método y mismas probabilidades: solo cambia cuánto arriesgas por operación.</div>`;
+}
+function vRec(){
+  $('rl_out').innerHTML=`<div class="card"><label>Si pierdes (%)</label><input id="rl_p" type="number" inputmode="decimal" value="25"><div id="rl_pr" class="precio" style="margin-top:8px"></div></div>
+<div class="card"><div class="row mut"><span>Si pierdes</span><span>Necesitas ganar</span></div>${[5,10,20,30,50,70,90].map(p=>`<div class="row"><span>${p}%</span><b class="dn">+${f(10000/(100-p)-100,0)}%</b></div>`).join('')}</div>
+<div class="mut">Las pérdidas grandes son cuesta arriba: perder 50% exige ganar 100% solo para volver a empatar.</div>`;
+  const c=()=>{const p=+$('rl_p').value;$('rl_pr').textContent=p>0&&p<100?`Necesitas ganar ${f(10000/(100-p)-100,1)}%`:''};
+  $('rl_p').oninput=c;c();
+}
+let rlv='r';
+function pintarRl(){$('rl_in').hidden=rlv==='x';({r:vRachas,c:vComp,x:vRec})[rlv]();}
+$('rl_sub').onclick=e=>{const s=e.target.dataset.s;if(!s)return;rlv=s;
+  $('rl_sub').querySelectorAll('button').forEach(b=>b.classList.toggle('on',b===e.target));pintarRl();};
+$('rl_go').onclick=pintarRl;
+
+// ================= Disciplina, puntaje y emociones =================
+const DISC=()=>store.get('disc')||{on:false,perd:3,ops:5};
+const capTotal=()=>sim.cash+Object.values(sim.pos).reduce((t,x)=>t+x.cant*x.prom,0);
+function hoyE(){const d=new Date();d.setHours(0,0,0,0);return sim.diario.filter(e=>(e.t||0)>=d.getTime());}
+function bloqueo(){
+  const c=DISC();if(!c.on)return'';
+  const h=hoyE(),net=h.reduce((t,e)=>t+(e.pnl||0),0),ops=h.filter(e=>e.tipo==='COMPRA').length,lim=capTotal()*c.perd/100;
+  if(net<=-lim)return`🛑 Modo disciplina: hoy llevas ${sg(net)} y tu límite es ${sg(-lim)}. Descansa y revisa tu diario; mañana sigues.`;
+  if(ops>=c.ops)return`🛑 Modo disciplina: ya hiciste ${ops} compras hoy (tu límite es ${c.ops}). Descansa.`;
+  return'';
+}
+const _op0=operar0;
+operar0=function(tipo){
+  const sym=$('s_sym').value.trim().toUpperCase(),m=$('s_msg'),n0=sim.diario.length;
+  if(tipo==='COMPRA'){
+    const b=bloqueo();if(b){m.className='dn';m.textContent=b;return;}
+    const cap=capTotal(),p=+$('s_px').value,s=+$('s_stp').value,o=+$('s_obj').value,q=+$('s_cant').value,raz=$('s_raz').value.trim();
+    _op0(tipo);
+    if(sim.diario.length>n0&&sim.pos[sym]){
+      const it={stop:s>0&&s<p,riesgo:(p-s)*q<=cap*.02,rr:(o-p)/(p-s)>=2,razon:!!raz},sc=Object.values(it).filter(Boolean).length,ps=sim.pos[sym];
+      ps.sc=sc;ps.em=$('s_em').value;Object.assign(sim.diario[sim.diario.length-1],{sc,it});guardar();
+      const ok=v=>v?'✅':'❌';
+      m.innerHTML+=`<br>📋 Disciplina ${sc}/4: ${ok(it.stop)} stop · ${ok(it.riesgo)} riesgo ≤2% · ${ok(it.rr)} 1:2 o más · ${ok(it.razon)} razón`+((store.get('reglas')||'').trim()?'<br>📜 Revisa tus reglas personales (pestaña 🛡️).':'');
+    }
+  }else{
+    const ps=sim.pos[sym],sc=ps&&ps.sc,em=ps&&ps.em;
+    _op0(tipo);
+    if(sim.diario.length>n0){const e=sim.diario[sim.diario.length-1];e.sc=sc;e.em=em;guardar();}
+  }
+};
+function pintarDs(){
+  const c=DISC(),h=hoyE(),net=h.reduce((t,e)=>t+(e.pnl||0),0),ops=h.filter(e=>e.tipo==='COMPRA').length;
+  const V=sim.diario.filter(e=>e.pnl!==undefined&&e.sc!==undefined);
+  const ag=a=>({n:a.length,w:a.filter(e=>e.pnl>=0).length,p:a.reduce((t,e)=>t+e.pnl,0)});
+  const fila=(t,a)=>`<div class="row"><span>${t} <span class="mut">${a.n} ops · ${a.n?Math.round(100*a.w/a.n):0}% aciertos</span></span><b class="${cls(a.p)}">${sg(a.p)}</b></div>`;
+  const EM={};V.forEach(e=>{(EM[e.em||'—']=EM[e.em||'—']||[]).push(e)});
+  const suerte=V.filter(e=>e.sc<3&&e.pnl>=0).length;
+  const rg=(store.get('reglas')||'').split('\n').map(s=>s.trim()).filter(Boolean),ok=store.get('reglasOK')||[];
+  $('ds').innerHTML=entrenador()+semana()+`<div class="card"><b>🛡️ Modo disciplina</b>
+<label class="chk"><input type="checkbox" id="d_on" ${c.on?'checked':''}><span style="color:var(--tx)">Activar: bloquea nuevas compras al llegar a tus límites</span></label>
+<div class="g2"><div><label>Pérdida máx. diaria (%)</label><input id="d_p" type="number" inputmode="decimal" value="${c.perd}"></div><div><label>Máx. compras por día</label><input id="d_o" type="number" inputmode="decimal" value="${c.ops}"></div></div>
+<div class="mut" style="margin-top:6px">Hoy: resultado ${sg(net)} · compras ${ops}</div></div>
+<div class="card"><b>📋 Proceso vs resultado</b><div class="mut">Cada compra recibe hasta 4 puntos: stop, riesgo ≤2%, relación 1:2 o mejor y razón anotada.</div>
+${V.length?fila('Bien ejecutadas (3-4 pts)',ag(V.filter(e=>e.sc>=3)))+fila('Mal ejecutadas (0-2 pts)',ag(V.filter(e=>e.sc<3)))+(suerte?`<div class="rec">⚠️ ${suerte} operación(es) mal ejecutadas salieron ganadoras: fue suerte, no método. No las repitas.</div>`:''):'<div class="mut" style="margin-top:6px">Aún no hay ventas con puntaje. Opera en el 💼 Simulador.</div>'}</div>
+<div class="card"><b>😰 Emociones</b>${V.length?Object.entries(EM).map(([k,a])=>fila(k,ag(a))).join(''):'<div class="mut">Elige cómo te sientes al comprar y aquí verás con qué estado te va mejor o peor.</div>'}</div>
+<div class="card"><b>📜 Mis reglas personales</b><div class="mut">Una regla por línea. Ejemplo: «No opero después de 2 pérdidas seguidas».</div>
+<textarea id="d_rg" rows="4" style="width:100%;margin-top:6px;padding:10px;border-radius:10px;border:1px solid var(--mut);background:var(--bg);color:var(--tx);font:inherit">${esc(store.get('reglas')||'')}</textarea>
+<button class="btn" id="d_sg">Guardar reglas</button>
+${rg.length?rg.map((t,i)=>`<label class="chk"><input type="checkbox" data-r="${i}" ${ok[i]?'checked':''}><span style="color:var(--tx)">${esc(t)}</span></label>`).join('')+`<div class="mut">Antes de operar marca cada regla. Cumples ${rg.filter((_,i)=>ok[i]).length}/${rg.length}.</div><button class="mini" data-x="1">Reiniciar marcas</button>`:''}</div>`;
+}
+$('ds').onchange=e=>{const t=e.target;
+  if(['d_on','d_p','d_o'].includes(t.id)){store.set('disc',{on:$('d_on').checked,perd:+$('d_p').value||3,ops:Math.round(+$('d_o').value)||5});pintarDs();}
+  else if((t.id||'').startsWith('w_')){guardarSem();}
+  else if(t.dataset.r!==undefined){const o=store.get('reglasOK')||[];o[+t.dataset.r]=t.checked;store.set('reglasOK',o);pintarDs();}};
+$('ds').onclick=e=>{
+  if(e.target.id==='d_sg'){store.set('reglas',$('d_rg').value);store.set('reglasOK',[]);pintarDs();}
+  else if(e.target.dataset.x){store.set('reglasOK',[]);pintarDs();}};
+
+// ================= Casos de decisión =================
+const CAS=[
+["Compraste con stop en $63,700. El precio baja a $63,800 y piensas: «seguro rebota».",["Mover el stop a $62,000 para darle espacio","Comprar más para bajar tu precio promedio","Dejar el stop donde está y aceptar lo que pase"],2,"El stop es tu plan. Moverlo cambia el riesgo que aceptaste, y comprar más multiplica una pérdida que ya no está funcionando."],
+["Perdiste 3 operaciones seguidas y estás molesto. Aparece una entrada que parece perfecta.",["Hacer una pausa y revisar tu diario","Entrar con el doble para recuperar lo perdido","Entrar sin stop porque «esta sí sube»"],0,"Tras una racha mala el juicio se nubla. Pausar y revisar el diario evita la operación impulsiva, que suele ser la peor."],
+["Tu compra va +$150 y tu objetivo está en +$300. Te da miedo perder lo ganado.",["Cerrar ya, sin ninguna razón técnica","Subir el stop a tu precio de entrada y dejar correr","Duplicar la posición"],1,"Subir el stop a la entrada elimina el riesgo sin romper el plan. Cerrar solo por miedo suele cortar tus ganancias y arruina tu relación riesgo/beneficio."],
+["BTC sube 8% en un día y todos hablan de eso. Sientes que te lo estás perdiendo.",["Comprar ya, sin stop, antes de que suba más","Pedir prestado para comprar más","Esperar un retroceso o una señal de tu plan; si no llega, no entrar"],2,"Entrar por miedo a perderse algo (FOMO) suele ser comprar caro. No operar también es una decisión válida."],
+["Un amigo te manda una «señal segura» de compra.",["Analizarla con tu propio plan (stop, objetivo, tamaño) o ignorarla","Copiarla con todo tu capital","Copiarla pero sin stop"],0,"No existen señales seguras. Si una idea ajena no pasa por tu plan, no es tu operación."],
+["Tu plan exige relación mínima 1:2, pero esta entrada solo da 1:1.",["Entrar igual, total es solo 1:1","No entrar y esperar un mejor precio","Mover el objetivo más lejos solo para que dé 1:2"],1,"Si el mercado no te ofrece la relación que tu plan exige, esperas. Inventar un objetivo irreal es engañarte."],
+["Ganaste 5 operaciones seguidas y te sientes imparable.",["Subir el riesgo de 1% a 5%","Operar sin stop porque ya «lo dominas»","Mantener tu riesgo y tu plan"],2,"La euforia después de ganar es peligrosa: una racha buena puede ser suerte. Lo que te protege es no cambiar tus reglas."],
+["Llegaste a tu límite de pérdida diaria (3%).",["Una operación más para recuperar","Cerrar la app, descansar y revisar el diario","Subir el riesgo para recuperar rápido"],1,"Los límites existen para estos momentos. Mañana vuelves con la cabeza fría; el capital que conservas es el que te permite seguir."]
+];
+let cs={i:0,s:0,a:undefined};
+function pintarCs(){
+  if(cs.i>=CAS.length){$('cs').innerHTML=`<div class="card"><b>Resultado: ${cs.s}/${CAS.length}</b><div class="mut">Cada caso entrena una decisión bajo emoción. Repítelo cuando quieras.</div><button class="btn" data-n="r">Repetir</button></div>`;return;}
+  const[q,o,c,x]=CAS[cs.i];
+  $('cs').innerHTML=`<div class="card"><div class="mut">Caso ${cs.i+1}/${CAS.length} · Puntaje ${cs.s}</div><p><b>${q}</b></p>${o.map((t,k)=>`<button class="btn" data-k="${k}" style="background:${cs.a===undefined?'var(--bt)':k===c?'var(--up)':k===cs.a?'var(--dn)':'var(--card)'};color:${cs.a===undefined||k===c||k===cs.a?'var(--bx)':'var(--tx)'}">${t}</button>`).join('')}${cs.a!==undefined?`<div class="rec">💡 ${x}</div><button class="btn" data-n="1" style="background:var(--card);color:var(--tx)">Siguiente ▶</button>`:''}</div>`;
+}
+$('cs').onclick=e=>{const d=e.target.dataset;
+  if(d.n){if(d.n==='r')cs={i:0,s:0,a:undefined};else{cs.i++;cs.a=undefined}pintarCs();return;}
+  if(d.k===undefined||cs.a!==undefined)return;cs.a=+d.k;if(cs.a===CAS[cs.i][2])cs.s++;pintarCs();};
+
+
+pintarChk();pintarGlo();cargar();
+$('ahorro').checked=ahorro;uso();if(!store.get('tut'))tut();
+</script>
+</body>
+</html>
